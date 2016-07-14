@@ -145,7 +145,7 @@ def overlapCorrection():
     
     x = 0
     for subIndices in shutterIndices:
-        runningTot = np.zeros((512,512),dtype=np.float16)
+        runningTot = np.zeros((512,512),dtype=np.float32)
         while b <= subIndices[-1]:
 
             fitsFiles = openFits(a,b)
