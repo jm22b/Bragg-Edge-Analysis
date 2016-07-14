@@ -146,7 +146,7 @@ def overlapCorrection():
     x = 0
     for subIndices in shutterIndices:
         runningTot = np.zeros((512,512),dtype=float)
-        while b < subIndices[-1]:
+        while b <= subIndices[-1]:
 
             fitsFiles = openFits(a,b)
             shutters = float(shutterValues[x][1])
@@ -158,6 +158,7 @@ def overlapCorrection():
             hdu.header = fitsFiles[2]
             hdu.header['N_COUNTS'] = sum(sum(correctedPix))
             hdu.writeto(path+'/overlapCorrected/corrected'+str(a)+'.fits')
+            
             prob = runningTot / shutters
             runningTot += fitsFiles[1]
             correctedPix = np.round(fitsFiles[1] / (1 - prob)).astype(int)
