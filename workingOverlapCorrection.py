@@ -145,14 +145,14 @@ def overlapCorrection():
     
     x = 0
     for subIndices in shutterIndices:
-        runningTot = np.zeros((512,512),dtype=float)
+        runningTot = np.zeros((512,512),dtype=np.float16)
         while b <= subIndices[-1]:
 
             fitsFiles = openFits(a,b)
             shutters = float(shutterValues[x][1])
             prob = runningTot / shutters
             runningTot += fitsFiles[0]
-            correctedPix = np.round(fitsFiles[0] / (1 - prob)).astype(int)
+            correctedPix = np.round(fitsFiles[0] / (1 - prob)).astype(np.int16)
             hdu = fits.PrimaryHDU()
             hdu.data = correctedPix
             hdu.header = fitsFiles[2]
@@ -161,7 +161,7 @@ def overlapCorrection():
             
             prob = runningTot / shutters
             runningTot += fitsFiles[1]
-            correctedPix = np.round(fitsFiles[1] / (1 - prob)).astype(int)
+            correctedPix = np.round(fitsFiles[1] / (1 - prob)).astype(np.int16)
             hdu = fits.PrimaryHDU()
             hdu.data = correctedPix
             hdu.header = fitsFiles[3]
