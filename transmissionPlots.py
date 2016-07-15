@@ -13,14 +13,14 @@ def openSample():
 
 
 def listSampleFiles(pathToSamples):
-    return glob.glob(os.path.join(pathToSamples, '*[0-9][0-9][0-9][0-9][0-9].fits'))
+    return glob.glob(os.path.join(pathToSamples, '*[0-9].fits'))
 
 def openOpenBeam():
     pathToOpenBeam = askdirectory()
     return pathToOpenBeam
 
 def listOpenBeamFiles(pathToOpenBeam):
-    return glob.glob(os.path.join(pathToOpenBeam, '*[0-9][0-9][0-9][0-9][0-9].fits'))
+    return glob.glob(os.path.join(pathToOpenBeam, '*[0-9].fits'))
 
 def compute():
     pathToSample = openSample()

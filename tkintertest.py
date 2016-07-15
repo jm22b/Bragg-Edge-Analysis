@@ -139,7 +139,7 @@ class tkintertest():
                 shutters = float(shutterValues[x][1])
                 prob = runningTot / shutters
                 runningTot += fitsFiles[0]
-                correctedPix = np.round(fitsFiles[0] / (1 - prob)).astype(np.int16)
+                correctedPix = (fitsFiles[0] / (1 - prob)).astype(np.int16)
                 hdu = fits.PrimaryHDU()
                 hdu.data = correctedPix
                 hdu.header = fitsFiles[2]
@@ -148,7 +148,7 @@ class tkintertest():
             
                 prob = runningTot / shutters
                 runningTot += fitsFiles[1]
-                correctedPix = np.round(fitsFiles[1] / (1 - prob)).astype(np.int16)
+                correctedPix = (fitsFiles[1] / (1 - prob)).astype(np.int16)
                 hdu = fits.PrimaryHDU()
                 hdu.data = correctedPix
                 hdu.header = fitsFiles[3]
