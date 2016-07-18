@@ -1,3 +1,2 @@
 numpy
 astropy
-PyQt4
