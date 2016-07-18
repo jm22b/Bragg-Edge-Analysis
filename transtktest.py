@@ -5,6 +5,9 @@ import copy
 from tkFileDialog import askdirectory
 import glob
 import os
+import matplotlib
+matplotlib.use("Qt4Agg")
+from matplotlib import pyplot as plt
 
 class tkintertest():
 
@@ -35,18 +38,24 @@ class tkintertest():
 
         
         self.label1 = tk.Label(self.frame, text="Overlap Correction (open beam)")
-        self.label1.grid(row=5)
+        self.label1.grid(row=1)
 
         self.buttonOverlapCorrectionOpen = tk.Button(
             self.frame, text="Apply",width=10, command=self.overlapOpenCorrection
             )
-        self.buttonOverlapCorrectionOpen.grid(row=5,column=1)
+        self.buttonOverlapCorrectionOpen.grid(row=1,column=1)
 
         self.label2 = tk.Label(self.frame, text="Overlap Correction (sample)")
-        self.label2.grid(row=6)
+        self.label2.grid(row=2)
         self.buttonOverlapCorrectionSample = tk.Button(
             self.frame, text="Apply", width=10, command=self.overlapSampleCorrection)
-        self.buttonOverlapCorrectionSample.grid(row=6,column=1)
+        self.buttonOverlapCorrectionSample.grid(row=2,column=1)
+        
+        self.label3 = tk.Label(self.frame, text="Transmission Plot")
+        self.label3.grid(row=3)
+        self.buttonTransmissionPlot = tk.Button(
+            self.frame, text="Plot", width=10, command=self.plot)
+        self.buttonTransmissionPlot.grid(row=3,column=1)
 
 
     def openOpenDirectory(self):
@@ -209,7 +218,7 @@ class tkintertest():
         shutterValues = shutterCounts[0]
         if not os.path.exists(openPath+"/overlapCorrected"):
             os.mkdir(openPath+"/overlapCorrected")
-    
+        f = open(openPath+'/overlapCorrected/TOFData','wb+')
         x = 0
         for subIndices in shutterIndices:
             runningTot = np.zeros((512,512),dtype=np.float32)
@@ -225,6 +234,10 @@ class tkintertest():
                 hdu.data = correctedPix
                 hdu.header = fitsFiles[2]
                 hdu.header['N_COUNTS'] = sum(sum(correctedPix))
+                counts = hdu.header['N_COUNTS']
+                TOF = hdu.header['TOF']
+                line = '%.16f %d \n' % (TOF, counts)
+                f.write(line)
                 hdu.writeto(openPath+'/overlapCorrected/corrected'+str(a)+'.fits')
             
                 prob = runningTot / shutters
@@ -234,12 +247,17 @@ class tkintertest():
                 hdu.data = correctedPix
                 hdu.header = fitsFiles[3]
                 hdu.header['N_COUNTS'] = sum(sum(correctedPix))
+                counts = hdu.header['N_COUNTS']
+                TOF = hdu.header['TOF']
+                line = '%.16f %d \n' % (TOF, counts)
+                f.write(line)
                 hdu.writeto(openPath+'/overlapCorrected/corrected'+str(b)+'.fits')
                 a += 2
                 b += 2
                 print b
             print shutters
             x += 1
+        f.close()
 
     def overlapSampleCorrection(self):
     
@@ -251,7 +269,7 @@ class tkintertest():
         shutterValues = shutterCounts[0]
         if not os.path.exists(samplePath+"/overlapCorrected"):
             os.mkdir(samplePath+"/overlapCorrected")
-    
+        f = open(samplePath+'/overlapCorrected/TOFData.txt','ab+')
         x = 0
         for subIndices in shutterIndices:
             runningTot = np.zeros((512,512),dtype=np.float32)
@@ -267,6 +285,10 @@ class tkintertest():
                 hdu.data = correctedPix
                 hdu.header = fitsFiles[2]
                 hdu.header['N_COUNTS'] = sum(sum(correctedPix))
+                counts = hdu.header['N_COUNTS']
+                TOF = hdu.header['TOF']
+                line = '%.16f %d \n' % (TOF, counts)
+                f.write(line)
                 hdu.writeto(samplePath+'/overlapCorrected/corrected'+str(a)+'.fits')
             
                 prob = runningTot / shutters
@@ -276,13 +298,60 @@ class tkintertest():
                 hdu.data = correctedPix
                 hdu.header = fitsFiles[3]
                 hdu.header['N_COUNTS'] = sum(sum(correctedPix))
+                counts = hdu.header['N_COUNTS']
+                TOF = hdu.header['TOF']
+                line = '%.16f %d \n' % (TOF, counts)
+                f.write(line)
                 hdu.writeto(samplePath+'/overlapCorrected/corrected'+str(b)+'.fits')
                 a += 2
                 b += 2
                 print b
             print shutters
             x += 1
+        f.close()
+    
+    def getData(self):
+        
+        f = open('/Users/jacobmaresca/python/python2/BraggEdgeAnalysis/IMATdatajuly2016/OpenBeam/overlapCorrected/TOFData.txt', 'ab+')
+        TOF = []
+        openData = []
+        for line in f:
+            a = line.split()
+            openData.append(a)
+            TOF.append(a[0])
+        g = open('/Users/jacobmaresca/python/python2/BraggEdgeAnalysis/IMATdatajuly2016/Weld1/Data/overlapCorrected/TOFData.txt', 'ab+')
+        sampleData = []
+        for line in g:
+            b = line.split()
+            sampleData.append(b)
 
+        zipped = zip(openData, sampleData)
+        transmissionData = []
+        for x,y in zipped:
+            transmitted = float(y[1])/float(x[1])
+            TOF = float(x[0])
+            transmissionData.insert(-1,(transmitted,TOF))
+
+        f.close()
+        g.close()
+
+        return transmissionData
+    
+    
+    def plot(self):
+
+        data = self.getData()
+        y_list = [x[0] for x in data]
+        x_list = [x[1] for x in data]
+    
+        plt.plot(x_list, y_list,'x')
+        plt.xlabel('Time of Flight (micro seconds)')
+        plt.ylabel('Transmission')
+        plt.title('Neutron Transmission')
+        plt.show()
+        plt.close()
+    
+    
     
     def hello(self):
 
