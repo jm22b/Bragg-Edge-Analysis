@@ -312,14 +312,14 @@ class tkintertest():
     
     def getData(self):
         
-        f = open('/Users/jacobmaresca/python/python2/BraggEdgeAnalysis/IMATdatajuly2016/OpenBeam/overlapCorrected/TOFData.txt', 'ab+')
+        f = open(openPath+'/overlapCorrected/TOFData.txt', 'ab+')
         TOF = []
         openData = []
         for line in f:
             a = line.split()
             openData.append(a)
             TOF.append(a[0])
-        g = open('/Users/jacobmaresca/python/python2/BraggEdgeAnalysis/IMATdatajuly2016/Weld1/Data/overlapCorrected/TOFData.txt', 'ab+')
+        g = open(samplePath+'/overlapCorrected/TOFData.txt', 'ab+')
         sampleData = []
         for line in g:
             b = line.split()
