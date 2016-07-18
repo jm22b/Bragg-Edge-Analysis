@@ -137,6 +137,7 @@ class tkintertest():
 
                 fitsFiles = self.openFits(a,b)
                 shutters = float(shutterValues[x][1])
+                
                 prob = runningTot / shutters
                 runningTot += fitsFiles[0]
                 correctedPix = np.round(fitsFiles[0] / (1 - prob)).astype(np.int16)
