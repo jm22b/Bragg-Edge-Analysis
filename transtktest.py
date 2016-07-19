@@ -41,14 +41,14 @@ class tkintertest():
         self.label1.grid(row=1)
 
         self.buttonOverlapCorrectionOpen = tk.Button(
-            self.frame, text="Apply",width=10, command=self.overlapOpenCorrection
+            self.frame, text="Apply",width=10, command=lambda: self.overlapCorrection(openPath)
             )
         self.buttonOverlapCorrectionOpen.grid(row=1,column=1)
 
         self.label2 = tk.Label(self.frame, text="Overlap Correction (sample)")
         self.label2.grid(row=2)
         self.buttonOverlapCorrectionSample = tk.Button(
-            self.frame, text="Apply", width=10, command=self.overlapSampleCorrection)
+            self.frame, text="Apply", width=10, command=lambda: self.overlapCorrection(samplePath))
         self.buttonOverlapCorrectionSample.grid(row=2,column=1)
         
         self.label3 = tk.Label(self.frame, text="Transmission Plot")
@@ -74,15 +74,15 @@ class tkintertest():
     
         return glob.glob(os.path.join(path, '*[0-9][0-9][0-9][0-9][0-9].fits'))
 
-    def openOpenFits(self,a,b):
+    def openFits(self,a,b,path):
     
-        files = self.listFits(openPath)
+        files = self.listFits(path)
         hdua = fits.getheader(files[a])
         hdub = fits.getheader(files[b])
         fileaData = fits.getdata(files[a])
         filebData = fits.getdata(files[b])
         return fileaData, filebData, hdua, hdub
-
+    """
     def openSampleFits(self,a,b):
 
         files = self.listFits(samplePath)
@@ -91,12 +91,13 @@ class tkintertest():
         fileaData = fits.getdata(files[a])
         filebData = fits.getdata(files[b])
         return fileaData, filebData, hdua, hdub
+    """
 
-    def readOpenShutter(self,path):
+    def readShutter(self,path):
     
-        countFile = glob.glob(os.path.join(openPath, "*ShutterCount.txt"))
-        timeFile = glob.glob(os.path.join(openPath, "*ShutterTimes.txt"))
-        spectraFile = glob.glob(os.path.join(openPath, "*Spectra.txt"))
+        countFile = glob.glob(os.path.join(path, "*ShutterCount.txt"))
+        timeFile = glob.glob(os.path.join(path, "*ShutterTimes.txt"))
+        spectraFile = glob.glob(os.path.join(path, "*Spectra.txt"))
         readCount = open(str(countFile[0]))
         readTime = open(str(timeFile[0]))
         readSpectra = open(str(spectraFile[0]))
@@ -119,7 +120,7 @@ class tkintertest():
         
         
         return countData, timeData, spectraData
-
+    """
     def readSampleShutter(self,path):
     
         countFile = glob.glob(os.path.join(samplePath, "*ShutterCount.txt"))
@@ -147,10 +148,11 @@ class tkintertest():
         
         
         return countData, timeData, spectraData
+    """
 
-    def preBinOpenData(self):
+    def preBinData(self,path):
     
-        shutterData = self.readOpenShutter(openPath)
+        shutterData = self.readShutter(path)
         shutterTimes = []
         x = 0
         for i in shutterData[0]:
@@ -177,7 +179,7 @@ class tkintertest():
                 else:
                     break
         return shutterIndices
-
+    """
     def preBinSampleData(self):
     
         shutterData = self.readSampleShutter(samplePath)
@@ -207,24 +209,25 @@ class tkintertest():
                 else:
                     break
         return shutterIndices
+    """
 
-    def overlapOpenCorrection(self):
+    def overlapCorrection(self,path):
     
         a = 0
         b = 1
-        binnedData = self.preBinOpenData()
-        shutterCounts = self.readOpenShutter(openPath)
+        binnedData = self.preBinData(path)
+        shutterCounts = self.readShutter(path)
         shutterIndices = binnedData
         shutterValues = shutterCounts[0]
-        if not os.path.exists(openPath+"/overlapCorrected"):
-            os.mkdir(openPath+"/overlapCorrected")
-        f = open(openPath+'/overlapCorrected/TOFData','wb+')
+        if not os.path.exists(path+"/overlapCorrected"):
+            os.mkdir(path+"/overlapCorrected")
+        f = open(path+'/overlapCorrected/TOFData','wb+')
         x = 0
         for subIndices in shutterIndices:
             runningTot = np.zeros((512,512),dtype=np.float32)
             while b <= subIndices[-1]:
 
-                fitsFiles = self.openOpenFits(a,b)
+                fitsFiles = self.openFits(a,b, path)
                 shutters = float(shutterValues[x][1])
                 
                 prob = runningTot / shutters
@@ -238,7 +241,7 @@ class tkintertest():
                 TOF = hdu.header['TOF']
                 line = '%.16f %d \n' % (TOF, counts)
                 f.write(line)
-                hdu.writeto(openPath+'/overlapCorrected/corrected'+str(a)+'.fits')
+                hdu.writeto(path+'/overlapCorrected/corrected'+str(a)+'.fits')
             
                 prob = runningTot / shutters
                 runningTot += fitsFiles[1]
@@ -251,14 +254,14 @@ class tkintertest():
                 TOF = hdu.header['TOF']
                 line = '%.16f %d \n' % (TOF, counts)
                 f.write(line)
-                hdu.writeto(openPath+'/overlapCorrected/corrected'+str(b)+'.fits')
+                hdu.writeto(path+'/overlapCorrected/corrected'+str(b)+'.fits')
                 a += 2
                 b += 2
                 print b
             print shutters
             x += 1
         f.close()
-
+    """
     def overlapSampleCorrection(self):
     
         a = 0
@@ -309,6 +312,7 @@ class tkintertest():
             print shutters
             x += 1
         f.close()
+    """
     
     def getData(self):
         
