@@ -2,6 +2,12 @@ import Tkinter as tk
 import glob
 import os
 import numpy as np
+import matplotlib
+matplotlib.use("TkAgg")
+from matplotlib import pyplot as plt
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2TkAgg
+from matplotlib.figure import Figure
+from matplotlib.widgets import Slider, RectangleSelector
 from tkFileDialog import askdirectory
 from astropy.io import fits
 
@@ -22,8 +28,7 @@ class BraggEdgeAnalysisGUI:
         self.filemenu = tk.Menu(self.menubar, tearoff=0)
         self.actionmenu = tk.Menu(self.menubar, tearoff=0)
 
-        self.openButton = tk.Button(self.frame, text="open", command=self.directory.getOpenPath)
-        self.sampleButton = tk.Button(self.frame, text="sample", command=self.directory.getSamplePath)
+        self.showDataButton = tk.Button(self.frame, text="Show Sample", width=10, command=lambda: ShowData(self.root, self.directory).plot())
 
         self.testButton = tk.Button(self.frame, text="test", command=lambda: Test(self.directory).do())
 
@@ -46,9 +51,8 @@ class BraggEdgeAnalysisGUI:
         self.menubar.add_cascade(label="Actions", menu=self.actionmenu)
 
         root.config(menu=self.menubar)
-        
-        self.openButton.pack()
-        self.sampleButton.pack()
+
+        self.showDataButton.pack()
         self.testButton.pack()
 
 
@@ -102,7 +106,6 @@ class GetDirectories:
             self.loadData(path, self.openFits)
         else:
             self.loadData(self.openPath, self.openFits)
-        print self.openFits.arrays[100]
         
     def getSamplePath(self):
 
@@ -113,7 +116,6 @@ class GetDirectories:
             self.loadData(path, self.sampleFits)
         else:
             self.loadData(self.samplePath, self.sampleFits)
-        print self.sampleFits.arrays[100]
 
     def loadData(self, path, container):
         f = glob.glob(os.path.join(path, "*[0-9][0-9][0-9][0-9][0-9].fits"))
@@ -338,6 +340,75 @@ class OverlapCorrectionAndScaling:
     def do(self):
         pass
 
+    
+class ShowData:
+
+    def __init__(self, root, directory):
+        
+        self.root = root
+        self.directory = directory
+        self.fig = Figure(figsize=(6, 6))
+        self.ax = self.fig.add_subplot(111)
+        self.plotted = False
+        self.l = None
+        self.canvas = None
+        plt.show()
+
+    def onSelect(self, eclick, erelease):
+        print "Start position: (%f, %f)" % (eclick.xdata, eclick.ydata)
+        print "End position: (%f, %f)" % (erelease.xdata, erelease.ydata)
+        global a
+        a = eclick.xdata
+        global b
+        b = erelease.xdata
+        global c
+        c = eclick.ydata
+        global d
+        d = erelease.ydata
+        return a, b, c, d
+
+    def plot(self, **kwargs):
+        self.slider = tk.Scale(
+            self.root, from_=0, to=len(self.directory.sampleFits.arrays)-1, resolution=1, orient=tk.HORIZONTAL, command=self.update
+            )
+        self.slider.pack()
+        self.plotted = True
+        self.s = 0
+        im = self.histeq(self.directory.sampleFits.arrays[self.s])[0]
+        self.l = self.ax.imshow(im, cmap=plt.cm.gray, **kwargs)
+        self.canvas = FigureCanvasTkAgg(self.fig, self.root)
+        self.canvas.get_tk_widget().pack()
+        self.canvas.draw()
+        self.myrectsel = MyRectangleSelector(self.ax, self.onSelect, drawtype="box", rectprops=dict(
+            facecolor="red", edgecolor="black", alpha=0.2, fill=True))
+
+    def update(self, val):
+        ind = int(self.slider.get())
+        if self.plotted:
+            im = self.histeq(self.directory.sampleFits.arrays[ind])[0]
+            self.l.set_data(im)
+            self.canvas.draw()
+
+    def histeq(self, im, nbr_bins=256):
+        # get image histogram
+        imhist, bins = np.histogram(im.flatten(), nbr_bins, normed=True)
+        cdf = imhist.cumsum()  # cumulative distribution function
+        cdf = 255 * cdf / cdf[-1]  # normalize
+
+        # use linear interpolation of cdf to find new pixel values
+        im2 = np.interp(im.flatten(), bins[:-1], cdf)
+
+        return im2.reshape(im.shape), cdf
+
+    
+class MyRectangleSelector(RectangleSelector):
+
+    def release(self, event):
+        super(MyRectangleSelector, self).release(event)
+        self.to_draw.set_visible(True)
+        self.canvas.draw()
+    
+        
 class Test:
 
     def __init__(self, dir):
