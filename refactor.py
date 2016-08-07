@@ -25,7 +25,7 @@ class BraggEdgeAnalysisGUI:
         self.openButton = tk.Button(self.frame, text="open", command=self.directory.getOpenPath)
         self.sampleButton = tk.Button(self.frame, text="sample", command=self.directory.getSamplePath)
 
-        self.testButton = tk.Button(self.frame, text="test", command= self.test.do)
+        self.testButton = tk.Button(self.frame, text="test", command=lambda: Test(self.directory).do())
 
         self.widgets()
 
@@ -102,6 +102,7 @@ class GetDirectories:
             self.loadData(path, self.openFits)
         else:
             self.loadData(self.openPath, self.openFits)
+        print self.openFits.arrays[100]
         
     def getSamplePath(self):
 
@@ -112,6 +113,7 @@ class GetDirectories:
             self.loadData(path, self.sampleFits)
         else:
             self.loadData(self.samplePath, self.sampleFits)
+        print self.sampleFits.arrays[100]
 
     def loadData(self, path, container):
         f = glob.glob(os.path.join(path, "*[0-9][0-9][0-9][0-9][0-9].fits"))
@@ -134,9 +136,6 @@ class OverlapCorrectionAndScaling:
         self.directory = directory
         self.openPath = self.directory.openPath
         self.samplePath = self.directory.samplePath
-        
-        self.sampleFits = self.directory.sampleFits
-        self.openFits = self.directory.openFits
 
         #self.openData = openData
         #self.sampleData = sampleData
@@ -217,18 +216,37 @@ class OverlapCorrectionAndScaling:
 
             os.mkdir(path + "/overlapCorrected")
             f = open(path + "/overlapCorrected/TOFData.csv", "wb")
-            zipped = zip(self.sampleFits.arrays, self.sampleFits.headers, self.sampleFits.names)
+            #zipped = zip(self.sampleFits.arrays, self.sampleFits.headers, self.sampleFits.names)
             s = 0
             for subIndex in shutterIndices:
-                subList = zipped[subIndex[0]:subIndex[-1]+1]
+                #subList = zipped[subIndex[0]:subIndex[-1]+1]
                 runningTot = np.zeros((512, 512))
 
-                for data, header, name in subList:
-
+                for i in range(subIndex[0], subIndex[0]+len(subIndex)):
                     shutter = float(shutterValues[s][1])
                     prob = np.divide(runningTot, shutter)
-                    runningTot += data
-                    correction = np.round(np.divide(data, (1 - prob))).astype(np.int16)
+                    runningTot += self.directory.sampleFits.arrays[i]
+                    self.directory.sampleFits.arrays[i] = np.round(np.divide(self.directory.sampleFits.arrays[i], (1 - prob))).astype(np.int16)
+                    #hdu = fits.PrimaryHDU()
+                    #hdu.data = self.directory.sampleFits.arrays[i]
+                    #counts = sum(sum(self.directory.sampleFits.arrays[i]))
+                    #hdu.header = self.directory.sampleFits.headers[i]
+                    #hdu.header["N_COUNTS"] = counts
+                    #TOF = hdu.header["TOF"]
+                    
+                    #line = "%.16f, %d\n" % (TOF, counts)
+                    #f.writelines(line)
+
+                    #hdu.writeto(path + "/overlapCorrected/corrected"+self.directory.sampleFits.names[i])
+                    
+            
+
+                #for data, header, name in subList:
+
+                    #shutter = float(shutterValues[s][1])
+                    #prob = np.divide(runningTot, shutter)
+                    #runningTot += data
+                    #correction = np.round(np.divide(data, (1 - prob))).astype(np.int16)
 
                     # hdu = fits.PrimaryHDU()
                     # hdu.data = correction
@@ -241,10 +259,11 @@ class OverlapCorrectionAndScaling:
                     # f.writelines(line)
 
                     #hdu.writeto(path + "/overlapCorrected/corrected"+name)
-                    print name
+                    #print name
                 print s
                 s += 1
             f.close()
+            print self.directory.sampleFits.arrays[100]
 
         else:
             shutterIndices = self.preBinData(path)
@@ -261,20 +280,39 @@ class OverlapCorrectionAndScaling:
 
             os.mkdir(path + "/scaledOpenBeam")
             f = open(path + "/scaledOpenBeam/TOFData.csv", "wb")
-            zipped = zip(self.openFits.arrays, self.openFits.headers, self.openFits.names)
+            #zipped = zip(self.openFits.arrays, self.openFits.headers, self.openFits.names)
             s = 0
 
             for subIndex in shutterIndices:
-                sublist = zipped[subIndex[0]:subIndex[-1]+1]
+                #sublist = zipped[subIndex[0]:subIndex[-1]+1]
                 runningTot = np.zeros((512, 512))
                 scaleFactor = ratio[s]
 
-                for data, header, name in sublist:
+                for i in range(subIndex[0], subIndex[0]+len(subIndex)):
                     shutter = float(shutterValuesOpen[s][1])
                     prob = np.divide(runningTot, shutter)
-                    runningTot += data
-                    correction = np.round(np.divide(data, (1 - prob))).astype(np.int16)
-                    scaled = correction * scaleFactor
+                    runningTot += self.directory.openFits.arrays[i]
+                    self.directory.openFits.arrays[i] = np.round(np.divide(self.directory.openFits.arrays[i], (1 - prob))).astype(np.int16) * scaleFactor
+                    
+                    #hdu = fits.PrimaryHDU()
+                    #hdu.data = self.directory.openFits.arrays[i]
+                    #counts = sum(sum(self.directory.openFits.arrays[i]))
+                    #hdu.header = self.directory.openFits.headers[i]
+                    #hdu.header["N_COUNTS"] = counts
+                    #TOF = hdu.header["TOF"]
+                    
+                    #line = "%.16f, %d\n" % (TOF, counts)
+                    #f.writelines(line)
+
+                    #hdu.writeto(path + "/scaledOpenBeam/scaled"+self.directory.sampleFits.names[i])
+                   
+
+                #for data, header, name in sublist:
+                    #shutter = float(shutterValuesOpen[s][1])
+                    #prob = np.divide(runningTot, shutter)
+                    #runningTot += data
+                    #correction = np.round(np.divide(data, (1 - prob))).astype(np.int16)
+                    #scaled = correction * scaleFactor
 
                     # hdu = fits.PrimaryHDU()
                     # hdu.data = scaled
@@ -287,10 +325,11 @@ class OverlapCorrectionAndScaling:
                     # f.writelines(line)
 
                     # hdu.writeto(path + "/scaledOpenBeam/scaled" + name)
-                    print name
+                    #print name
                 print s
                 s += 1
             f.close()
+            print self.directory.openFits.arrays[100] 
 
     def doBoth(self):
         self.overlapCorrection(self.directory.openPath)
@@ -305,7 +344,7 @@ class Test:
         self.a = dir
 
     def do(self):
-        print self.a.openFits.arrays
+        print self.a.openFits.arrays[100]
 
     
 
