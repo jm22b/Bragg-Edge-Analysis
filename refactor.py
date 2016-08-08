@@ -72,7 +72,7 @@ class FitsData:
         self.arrays = arrays
         
 
-class DirectoryiHandler:
+class DirectoryHandler:
 
     def __init__(self):
         self.openPath = None
