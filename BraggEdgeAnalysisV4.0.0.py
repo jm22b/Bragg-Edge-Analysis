@@ -23,7 +23,7 @@ class BraggEdgeAnalysisGUI:
         self.root = root_
         self.frame = tk.Frame(self.root)
         self.frame.pack()
-        
+
         self.directory = GetDirectories()
         self.test = Test(self.directory)
         self.correction = OverlapCorrectionAndScaling(self.directory)
@@ -33,9 +33,10 @@ class BraggEdgeAnalysisGUI:
         self.actionmenu = tk.Menu(self.menubar, tearoff=0)
         self.transplot = tk.Menu(self.menubar)
 
-        self.showDataButton = tk.Button(self.frame, text="Show Sample", width=10, command=lambda: ShowData(self.root, self.directory).plot())
+        self.showDataButton = tk.Button(
+            self.frame, text="Show Sample", width=10, command=lambda: ShowData(self.root, self.directory).plot())
 
-        self.testButton = tk.Button(self.frame, text="test", command=lambda: Test(self.directory).do())
+        #self.contrastButton = tk.Button(self.root, text="Histogram Equalisation", command=lambda: ShowData(self.root, self.directory).contrast)
         self.flightpath = tk.Entry(self.frame, width=30)
 
         self.widgets()
@@ -56,9 +57,11 @@ class BraggEdgeAnalysisGUI:
         self.actionmenu.add_command(label="Correct & Scale Data", command=self.correction.doBoth)
         self.actionmenu.add_separator()
         self.actionmenu.add_cascade(label="Transmission", menu=self.transplot)
-        self.transplot.add_command(label="Plot (TOF)", command=lambda: TransPlot(self.directory, self.flightpath).plotTransTOF())
+        self.transplot.add_command(
+            label="Plot (TOF)", command=lambda: TransPlot(self.directory, self.flightpath).plotTransTOF())
         self.transplot.add_separator()
-        self.transplot.add_command(label="Plot (Wavelength)", command=lambda: TransPlot(self.directory, self.flightpath).plotTransWavelength())
+        self.transplot.add_command(
+            label="Plot (Wavelength)", command=lambda: TransPlot(self.directory, self.flightpath).plotTransWavelength())
         self.actionmenu.add_separator()
         self.actionmenu.add_command(label="Fit Bragg Edge", command=lambda: EdgeFitting().subPlot())
         self.menubar.add_cascade(label="Actions", menu=self.actionmenu)
@@ -68,7 +71,7 @@ class BraggEdgeAnalysisGUI:
         self.flightpath.insert(0, "Default flight path: 56m")
         self.flightpath.pack()
         self.showDataButton.pack()
-        self.testButton.pack()
+        #self.contrastButton.pack()
 
 
 class FitsData:
@@ -100,6 +103,7 @@ class DirectoryHandler:
     def openSampleDirectory(self):
         self.samplePath = askdirectory()
         return self.samplePath
+
 
 class GetDirectories:
 
@@ -151,11 +155,6 @@ class OverlapCorrectionAndScaling:
     def __init__(self, directory):
 
         self.directory = directory
-        #self.openPath = self.directory.openPath
-        #self.samplePath = self.directory.samplePath
-
-        #self.openData = openData
-        #self.sampleData = sampleData
 
     def readShutter(self, path):
         # finds the ShutterCount file in openbeam folder
@@ -243,7 +242,8 @@ class OverlapCorrectionAndScaling:
                     shutter = float(shutterValues[s][1])
                     prob = np.divide(runningTot, shutter)
                     runningTot += self.directory.sampleFits.arrays[i]
-                    self.directory.sampleFits.arrays[i] = np.round(np.divide(self.directory.sampleFits.arrays[i], (1 - prob))).astype(np.int16)
+                    self.directory.sampleFits.arrays[i] = np.round(
+                        np.divide(self.directory.sampleFits.arrays[i], (1 - prob))).astype(np.int16)
                     hdu = fits.PrimaryHDU()
                     hdu.data = self.directory.sampleFits.arrays[i]
                     counts = sum(sum(self.directory.sampleFits.arrays[i]))
@@ -256,15 +256,13 @@ class OverlapCorrectionAndScaling:
 
                     hdu.writeto(path + "/overlapCorrected/corrected"+self.directory.sampleFits.names[i])
                     print i
-                    
-            
 
-                #for data, header, name in subList:
+                # for data, header, name in subList:
 
-                    #shutter = float(shutterValues[s][1])
-                    #prob = np.divide(runningTot, shutter)
-                    #runningTot += data
-                    #correction = np.round(np.divide(data, (1 - prob))).astype(np.int16)
+                    # shutter = float(shutterValues[s][1])
+                    # prob = np.divide(runningTot, shutter)
+                    # runningTot += data
+                    # correction = np.round(np.divide(data, (1 - prob))).astype(np.int16)
 
                     # hdu = fits.PrimaryHDU()
                     # hdu.data = correction
@@ -276,8 +274,8 @@ class OverlapCorrectionAndScaling:
                     # line = "%.16f, %d\n" % (TOF, counts)
                     # f.writelines(line)
 
-                    #hdu.writeto(path + "/overlapCorrected/corrected"+name)
-                    #print name
+                    # hdu.writeto(path + "/overlapCorrected/corrected"+name)
+                    # print name
                 print s
                 s += 1
             f.close()
@@ -298,11 +296,11 @@ class OverlapCorrectionAndScaling:
 
             os.mkdir(path + "/scaledOpenBeam")
             f = open(path + "/scaledOpenBeam/TOFData.csv", "wb")
-            #zipped = zip(self.openFits.arrays, self.openFits.headers, self.openFits.names)
+            # zipped = zip(self.openFits.arrays, self.openFits.headers, self.openFits.names)
             s = 0
 
             for subIndex in shutterIndices:
-                #sublist = zipped[subIndex[0]:subIndex[-1]+1]
+                # sublist = zipped[subIndex[0]:subIndex[-1]+1]
                 runningTot = np.zeros((512, 512))
                 scaleFactor = ratio[s]
 
@@ -324,14 +322,13 @@ class OverlapCorrectionAndScaling:
 
                     hdu.writeto(path + "/scaledOpenBeam/scaled"+self.directory.sampleFits.names[i])
                     print i
-                   
 
-                #for data, header, name in sublist:
-                    #shutter = float(shutterValuesOpen[s][1])
-                    #prob = np.divide(runningTot, shutter)
-                    #runningTot += data
-                    #correction = np.round(np.divide(data, (1 - prob))).astype(np.int16)
-                    #scaled = correction * scaleFactor
+                # for data, header, name in sublist:
+                    # shutter = float(shutterValuesOpen[s][1])
+                    # prob = np.divide(runningTot, shutter)
+                    # runningTot += data
+                    # correction = np.round(np.divide(data, (1 - prob))).astype(np.int16)
+                    # scaled = correction * scaleFactor
 
                     # hdu = fits.PrimaryHDU()
                     # hdu.data = scaled
@@ -344,7 +341,7 @@ class OverlapCorrectionAndScaling:
                     # f.writelines(line)
 
                     # hdu.writeto(path + "/scaledOpenBeam/scaled" + name)
-                    #print name
+                    # print name
                 print s
                 s += 1
             f.close()
@@ -361,12 +358,21 @@ class ShowData:
         
         self.root = root
         self.directory = directory
-        self.fig = Figure(figsize=(6, 6))
+
+        self.fig = Figure(figsize=(7, 7))
         self.ax = self.fig.add_subplot(111)
-        self.plotted = False
-        self.l = None
-        self.canvas = None
+        #self.plotted = False
+        #self.l = None
+        #self.canvas = None
         plt.show()
+
+        self.slider = tk.Scale(
+            self.root, from_=0, to=(len(self.directory.sampleFits.arrays) - 1), resolution=1, orient=tk.HORIZONTAL,
+            command=self.update
+        )
+        self.slider.pack()
+        self.button = tk.Button(text="Histogram Equalisation", command=self.contrast)
+        self.button.pack()
 
     def onSelect(self, eclick, erelease):
         print "Start position: (%f, %f)" % (eclick.xdata, eclick.ydata)
@@ -381,15 +387,12 @@ class ShowData:
         d = erelease.ydata
         return a, b, c, d
 
-    def plot(self, **kwargs):
-        self.slider = tk.Scale(
-            self.root, from_=0, to=len(self.directory.sampleFits.arrays)-1, resolution=1, orient=tk.HORIZONTAL, command=self.update
-            )
-        self.slider.pack()
+    def plot(self):
+
         self.plotted = True
         self.s = 0
-        im = self.histeq(self.directory.sampleFits.arrays[self.s])[0]
-        self.l = self.ax.imshow(im, cmap=plt.cm.gray, **kwargs)
+        im = self.directory.sampleFits.arrays[self.s]
+        self.l = self.ax.imshow(im, cmap=plt.cm.gray)
         self.canvas = FigureCanvasTkAgg(self.fig, self.root)
         self.canvas.get_tk_widget().pack()
         self.canvas.draw()
@@ -399,7 +402,7 @@ class ShowData:
     def update(self, val):
         ind = int(self.slider.get())
         if self.plotted:
-            im = self.histeq(self.directory.sampleFits.arrays[ind])[0]
+            im = self.directory.sampleFits.arrays[ind]
             self.l.set_data(im)
             self.canvas.draw()
 
@@ -413,6 +416,12 @@ class ShowData:
         im2 = np.interp(im.flatten(), bins[:-1], cdf)
 
         return im2.reshape(im.shape), cdf
+
+    def contrast(self):
+        ind = int(self.slider.get())
+        im = self.histeq(self.directory.sampleFits.arrays[ind])[0]
+        self.l.set_data(im)
+        self.canvas.draw()
 
     
 class MyRectangleSelector(RectangleSelector):
@@ -450,11 +459,11 @@ class TransPlot:
 
         scaledIntensities = []
         for scaled in self.directory.openFits.arrays:
-            scaledIntensities.append(sum(sum(scaled[a:b,c:d])))
+            scaledIntensities.append(sum(sum(scaled[a:b, c:d])))
 
         sampleIntensities = []
         for sample in self.directory.sampleFits.arrays:
-            sampleIntensities.append(sum(sum(sample[a:b,c:d])))
+            sampleIntensities.append(sum(sum(sample[a:b, c:d])))
 
         transmitted = []
         zipped = zip(sampleIntensities, scaledIntensities)
@@ -489,7 +498,7 @@ class TransPlot:
         self.ax = self.fig.add_subplot(111)
         self.ax.autoscale(enable=True, axis="both", tight=True)
         self.myrectsel = MyRectangleSelector(
-            self.ax, self.onSelect, drawtype='box',rectprops=dict(
+            self.ax, self.onSelect, drawtype='box', rectprops=dict(
                 facecolor='red', edgecolor='black', alpha=0.5, fill=True))
         plt.plot(xyData[0], xyData[1])
         plt.ylim(ymin, ymax)
@@ -557,8 +566,8 @@ class EdgeFitting:
         self.canvas.show()
         self.canvas.get_tk_widget().grid(row=0)
 
-        #self.toolbar = NavigationToolbar2TkAgg(self.canvas, self.frame)
-        #self.toolbar.update()
+        # self.toolbar = NavigationToolbar2TkAgg(self.canvas, self.frame)
+        # self.toolbar.update()
 
         self.plotButton = tk.Button(self.frame, text="Fit Curve", command=self.fitCurve)
 
@@ -626,7 +635,6 @@ class EdgeFitting:
                     self.suby.append(yval)
 
             self.ax.plot(self.subx, self.suby, 'x')
-            
 
     def fitCurve(self):
 
@@ -637,7 +645,9 @@ class EdgeFitting:
             self.ax.cla()
             self.ax.plot(self.subx, self.suby, 'x')
 
-            initial_guess = [float(self.coeff1.get()), float(self.coeff2.get()), float(self.lambda0var.get()), float(self.sigmavar.get()), float(self.tauvar.get())]
+            initial_guess = [float(
+                self.coeff1.get()), float(
+                self.coeff2.get()), float(self.lambda0var.get()), float(self.sigmavar.get()), float(self.tauvar.get())]
 
             popt, pcov = curve_fit(self.func, self.subx, self.suby, p0=initial_guess)
             self.ax.plot(self.subx, self.func(self.subx, popt[0], popt[1], popt[2], popt[3], popt[4]))
@@ -652,7 +662,8 @@ class EdgeFitting:
             self.ax.cla()
             self.ax.plot(self.subx, self.suby, 'x')
             x = np.linspace(self.subx[0], self.subx[-1], 100)
-            self.ax.plot(x, self.func(x, initial_guess[0], initial_guess[1], initial_guess[2], initial_guess[3], initial_guess[4]))
+            self.ax.plot(
+                x, self.func(x, initial_guess[0], initial_guess[1], initial_guess[2], initial_guess[3], initial_guess[4]))
             self.canvas.show()
             return ctypes.windll.user32.MessageBoxA(0, "Please refine your parameters", "Error", 1)
 
@@ -660,7 +671,8 @@ class EdgeFitting:
         fields = [self.coeff1, self.coeff2, self.lambda0var, self.sigmavar, self.tauvar]
         for field in fields:
             field.delete(0, "end")
-        
+
+
 class Test:
 
     def __init__(self, dir):
@@ -669,7 +681,6 @@ class Test:
     def do(self):
         print self.a.openFits.arrays[100]
 
-    
 
 if __name__ == "__main__":
     root = tk.Tk()
