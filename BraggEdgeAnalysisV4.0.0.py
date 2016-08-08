@@ -439,12 +439,12 @@ class TransPlot:
         except NameError:
             return ctypes.windll.user32.MessageBoxA(0, "You must select an ROI first", "Error", 1)
 
-        #global transW
-        self.transW = []
-        #global wavelength
-        self.wavelength = []
-        #global timeOF
-        self.timeOF = []
+        global transW
+        transW = []
+        global wavelength
+        wavelength = []
+        global timeOF
+        timeOF = []
 
     def produceTransData(self):
 
@@ -469,18 +469,17 @@ class TransPlot:
 
     def convertToWavelength(self, data):
 
-        self.wavelength = []
         h = 6.6E-34
         m = 1.67E-27
         A = 10**10
         for point in data:
-            self.wavelength.append(((h*float(point))/(self.L*m))*A)
-        return self.wavelength
+            wavelength.append(((h*float(point))/(self.L*m))*A)
+        return wavelength
 
     def plotTransTOF(self):
 
         xyData = self.produceTransData()
-        self.timeOF = xyData[0]
+        timeOF = xyData[0]
 
         ymin = min(xyData[1]) - 0.05
         ymax = max(xyData[1]) + 0.05
@@ -498,13 +497,13 @@ class TransPlot:
         plt.show()
         plt.close()
 
-        return self.timeOF
+        return timeOF
 
     def plotTransWavelength(self):
 
         xyData = self.produceTransData()
-        self.transW = xyData[1]
-        self.wavelength = self.convertToWavelength(xyData[0])
+        transW = xyData[1]
+        wavelength = self.convertToWavelength(xyData[0])
 
         ymin = min(xyData[1]) - 0.05
         ymax = max(xyData[1]) + 0.05
@@ -522,8 +521,7 @@ class TransPlot:
         plt.ylim(ymin, ymax)
         plt.show()
         plt.close()
-        data = None
-        return self.wavelength, self.transW
+        return wavelength, transW
 
     def onSelect(self, eclick, erelease):
         print "Start position: (%f, %f)" % (eclick.xdata, eclick.ydata)
@@ -540,13 +538,11 @@ class TransPlot:
 
 class EdgeFitting:
 
-    def __init__(self, instance):
+    def __init__(self):
 
-        self.data = instance
-
-        self.xvalsW = self.data.wavelength
-        self.trans = self.data.transW
-        self.xvalsT = self.data.timeOF
+        self.xvalsW = wavelength
+        self.trans = transW
+        self.xvalsT = timeOF
         self.subx = []
         self.suby = []
 
