@@ -468,7 +468,7 @@ class TransPlot:
         return TOF, transmitted
 
     def convertToWavelength(self, data):
-
+        wavelength = []
         h = 6.6E-34
         m = 1.67E-27
         A = 10**10
