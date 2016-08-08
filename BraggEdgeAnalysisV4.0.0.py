@@ -440,6 +440,11 @@ class TransPlot:
         except NameError:
             return ctypes.windll.user32.MessageBoxA(0, "You must select an ROI first", "Error", 1)
 
+        global TransW
+        TransW = None
+        global wavelength
+        wavelength = None
+
     def produceTransData(self):
 
         scaledIntensities = []
