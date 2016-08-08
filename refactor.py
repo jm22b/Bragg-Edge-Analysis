@@ -434,7 +434,7 @@ class TransPlot:
 
     def produceTransData(self):
 
-        scaledInensities = []
+        scaledIntensities = []
         for scaled in self.directory.openFits.arrays:
             scaledIntensities.append(sum(sum(scaled[a:b,c:d])))
 
