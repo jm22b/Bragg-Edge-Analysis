@@ -23,12 +23,10 @@ class BraggEdgeAnalysisGUI:
         self.root = root_
         self.frame = tk.Frame(self.root)
         self.frame.pack()
-        self.flightpath = tk.Entry(self.frame, width=30)
+        
         self.directory = GetDirectories()
         self.test = Test(self.directory)
         self.correction = OverlapCorrectionAndScaling(self.directory)
-
-        self.transplotter = TransPlot(self.directory, self.flightpath)
 
         self.menubar = tk.Menu(self.root)
         self.filemenu = tk.Menu(self.menubar, tearoff=0)
@@ -38,6 +36,7 @@ class BraggEdgeAnalysisGUI:
         self.showDataButton = tk.Button(self.frame, text="Show Sample", width=10, command=lambda: ShowData(self.root, self.directory).plot())
 
         self.testButton = tk.Button(self.frame, text="test", command=lambda: Test(self.directory).do())
+        self.flightpath = tk.Entry(self.frame, width=30)
 
         self.widgets()
 
@@ -61,7 +60,7 @@ class BraggEdgeAnalysisGUI:
         self.transplot.add_separator()
         self.transplot.add_command(label="Plot (Wavelength)", command=lambda: TransPlot(self.directory, self.flightpath).plotTransWavelength())
         self.actionmenu.add_separator()
-        self.actionmenu.add_command(label="Fit Bragg Edge", command=lambda: EdgeFitting(self.transplotter.wavelength, self.transplotter.transW, self.transplotter.timeOF).subPlot())
+        self.actionmenu.add_command(label="Fit Bragg Edge", command=lambda: EdgeFitting(TransPlot(self.directory, self.flightpath)).subPlot())
         self.menubar.add_cascade(label="Actions", menu=self.actionmenu)
 
         root.config(menu=self.menubar)
@@ -541,11 +540,13 @@ class TransPlot:
 
 class EdgeFitting:
 
-    def __init__(self, wavelength, transW, timeOF):
+    def __init__(self, instance):
 
-        self.xvalsW = wavelength
-        self.trans = transW
-        self.xvalsT = timeOF
+        self.data = instance
+
+        self.xvalsW = self.data.wavelength
+        self.trans = self.data.transW
+        self.xvalsT = self.data.timeOF
         self.subx = []
         self.suby = []
 
