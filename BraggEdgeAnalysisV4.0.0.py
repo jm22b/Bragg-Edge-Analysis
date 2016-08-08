@@ -444,6 +444,8 @@ class TransPlot:
         TransW = None
         global wavelength
         wavelength = None
+        global timeOF
+        timeOF = None
 
     def produceTransData(self):
 
