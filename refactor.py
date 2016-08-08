@@ -53,9 +53,9 @@ class BraggEdgeAnalysisGUI:
         self.actionmenu.add_command(label="Correct & Scale Data", command=self.correction.doBoth)
         self.actionmenu.add_separator()
         self.actionmenu.add_cascade(label="Transmission", menu=self.transplot)
-        self.transplot.add_command(label="Plot (TOF)", command=lambda: self.TransPlot(self.directory, self.flightpath).plotTransTOF())
+        self.transplot.add_command(label="Plot (TOF)", command=lambda: TransPlot(self.directory, self.flightpath).plotTransTOF())
         self.transplot.add_separator()
-        self.transplot.add_command(label="Plot (Wavelength)", command=lambda: self.TransPlot(self.directory, self.flightpath).plotTransWavelength())
+        self.transplot.add_command(label="Plot (Wavelength)", command=lambda: TransPlot(self.directory, self.flightpath).plotTransWavelength())
         self.menubar.add_cascade(label="Actions", menu=self.actionmenu)
 
         root.config(menu=self.menubar)
