@@ -495,7 +495,7 @@ class TransPlot:
         wavelength = self.convertToWavelength(xyData[0])
 
         ymin = min(xyData[1]) - 0.05
-        ymax = max(xyData[1] + 0.05)
+        ymax = max(xyData[1]) + 0.05
 
         self.fig = plt.figure(1)
         self.ax = self.fig.add_subplot(111)
