@@ -448,7 +448,7 @@ class TransPlot:
             transmitted.append(float(sample)/float(scaled))
 
         TOF = []
-        for header in self.directory.sampleFit.headers:
+        for header in self.directory.sampleFits.headers:
             TOF.append(header["TOF"])
 
         return TOF, transmitted
