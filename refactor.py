@@ -239,17 +239,18 @@ class OverlapCorrectionAndScaling:
                     prob = np.divide(runningTot, shutter)
                     runningTot += self.directory.sampleFits.arrays[i]
                     self.directory.sampleFits.arrays[i] = np.round(np.divide(self.directory.sampleFits.arrays[i], (1 - prob))).astype(np.int16)
-                    #hdu = fits.PrimaryHDU()
-                    #hdu.data = self.directory.sampleFits.arrays[i]
-                    #counts = sum(sum(self.directory.sampleFits.arrays[i]))
-                    #hdu.header = self.directory.sampleFits.headers[i]
-                    #hdu.header["N_COUNTS"] = counts
-                    #TOF = hdu.header["TOF"]
+                    hdu = fits.PrimaryHDU()
+                    hdu.data = self.directory.sampleFits.arrays[i]
+                    counts = sum(sum(self.directory.sampleFits.arrays[i]))
+                    hdu.header = self.directory.sampleFits.headers[i]
+                    hdu.header["N_COUNTS"] = counts
+                    TOF = hdu.header["TOF"]
                     
-                    #line = "%.16f, %d\n" % (TOF, counts)
-                    #f.writelines(line)
+                    line = "%.16f, %d\n" % (TOF, counts)
+                    f.writelines(line)
 
-                    #hdu.writeto(path + "/overlapCorrected/corrected"+self.directory.sampleFits.names[i])
+                    hdu.writeto(path + "/overlapCorrected/corrected"+self.directory.sampleFits.names[i])
+                    print i
                     
             
 
@@ -306,17 +307,18 @@ class OverlapCorrectionAndScaling:
                     runningTot += self.directory.openFits.arrays[i]
                     self.directory.openFits.arrays[i] = np.round(np.divide(self.directory.openFits.arrays[i], (1 - prob))).astype(np.int16) * scaleFactor
                     
-                    #hdu = fits.PrimaryHDU()
-                    #hdu.data = self.directory.openFits.arrays[i]
-                    #counts = sum(sum(self.directory.openFits.arrays[i]))
-                    #hdu.header = self.directory.openFits.headers[i]
-                    #hdu.header["N_COUNTS"] = counts
-                    #TOF = hdu.header["TOF"]
+                    hdu = fits.PrimaryHDU()
+                    hdu.data = self.directory.openFits.arrays[i]
+                    counts = sum(sum(self.directory.openFits.arrays[i]))
+                    hdu.header = self.directory.openFits.headers[i]
+                    hdu.header["N_COUNTS"] = counts
+                    TOF = hdu.header["TOF"]
                     
-                    #line = "%.16f, %d\n" % (TOF, counts)
-                    #f.writelines(line)
+                    line = "%.16f, %d\n" % (TOF, counts)
+                    f.writelines(line)
 
-                    #hdu.writeto(path + "/scaledOpenBeam/scaled"+self.directory.sampleFits.names[i])
+                    hdu.writeto(path + "/scaledOpenBeam/scaled"+self.directory.sampleFits.names[i])
+                    print i
                    
 
                 #for data, header, name in sublist:
