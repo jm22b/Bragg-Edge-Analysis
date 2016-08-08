@@ -479,6 +479,7 @@ class TransPlot:
     def plotTransTOF(self):
 
         xyData = self.produceTransData()
+        global timeOF
         timeOF = xyData[0]
 
         ymin = min(xyData[1]) - 0.05
@@ -502,7 +503,9 @@ class TransPlot:
     def plotTransWavelength(self):
 
         xyData = self.produceTransData()
+        global transW
         transW = xyData[1]
+        global wavelength
         wavelength = self.convertToWavelength(xyData[0])
 
         ymin = min(xyData[1]) - 0.05
