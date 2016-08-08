@@ -446,7 +446,79 @@ class TransPlot:
             TOF.append(header["TOF"])
 
         return TOF, transmitted
-    
+
+    def convertToWavelength(self, data):
+
+        wavelength = []
+        h = 6.6E-34
+        m = 1.67E-27
+        A = 10**10
+        for point in data:
+            wavelength.append(((h*float(point))/(self.L*m))*A)
+        return wavelength
+
+    def plotTransTOF(self):
+
+        xyData = self.produceTransData()
+        global timeOF
+        timeOF = xyData[0]
+
+        ymin = min(xyData[1]) - 0.05
+        ymax = max(xyData[1]) + 0.05
+
+        self.fig = plt.figure(1)
+        self.ax = self.fig.add_subplot(111)
+        self.ax.autoscale(enable=True, axis="both", tight=True)
+        self.myrectsel = MyRectangleSelector(
+            self.ax, self.onSelect, drawtype='box',rectprops=dict(
+                facecolor='red', edgecolor='black', alpha=0.5, fill=True))
+        plt.plot(xyData[0], xyData[1])
+        plt.ylim(ymin, ymax)
+        plt.xlabel("Time of Flight (s)")
+        plt.ylabel("Neutron Transmission")
+        plt.show()
+        plt.close()
+
+        return timeOF
+
+    def plotTransWavelength(self):
+
+        xyData = self.produceTransData()
+        global transW
+        transW = xyData[1]
+        wavelength = self.convertToWavelength(xyData[0])
+
+        ymin = min(xyData[1]) - 0.05
+        ymax = max(xyData[1] + 0.05)
+
+        self.fig = plt.figure(1)
+        self.ax = self.fig.add_subplot(111)
+        self.ax.autoscale(enable=True, axis="both", tight=True)
+        self.myrectsel = MyRectangleSelector(
+            self.ax, self.onSelect, drawtype='box', rectprops=dict(
+                facecolor='red', edgecolor='black', alpha=0.5, fill=True))
+
+        plt.plot(wavelength, xyData[1])
+        plt.xlabel(u"Wavelength (\u00C5)")
+        plt.ylabel("Neutron Transmission")
+        plt.ylim(ymin, ymax)
+        plt.show()
+        plt.close()
+        data = None
+        return wavelength, transW
+
+    def onSelect(self, eclick, erelease):
+        print "Start position: (%f, %f)" % (eclick.xdata, eclick.ydata)
+        print "End position: (%f, %f)" % (erelease.xdata, erelease.ydata)
+        global atp
+        atp = eclick.xdata
+        global btp
+        btp = erelease.xdata
+        global ctp
+        ctp = eclick.ydata
+        global dtp
+        dtp = erelease.ydata
+        return atp, btp, ctp, dtp    
         
 class Test:
 
