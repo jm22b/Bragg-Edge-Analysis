@@ -28,6 +28,8 @@ class BraggEdgeAnalysisGUI:
         self.filemenu = tk.Menu(self.menubar, tearoff=0)
         self.actionmenu = tk.Menu(self.menubar, tearoff=0)
 
+        self.flightpath = tk.Entry(self.frame, width=30)
+
         self.showDataButton = tk.Button(self.frame, text="Show Sample", width=10, command=lambda: ShowData(self.root, self.directory).plot())
 
         self.testButton = tk.Button(self.frame, text="test", command=lambda: Test(self.directory).do())
@@ -52,6 +54,8 @@ class BraggEdgeAnalysisGUI:
 
         root.config(menu=self.menubar)
 
+        self.flightpath.insert(0, "Default flight path: 56m")
+        self.flightpath.pack()
         self.showDataButton.pack()
         self.testButton.pack()
 
@@ -404,6 +408,44 @@ class MyRectangleSelector(RectangleSelector):
         super(MyRectangleSelector, self).release(event)
         self.to_draw.set_visible(True)
         self.canvas.draw()
+
+
+class TransPlot:
+
+    def __init__(self, directory, val):
+
+        self.directory = directory
+        try:
+            self.val = val.get()
+            if self.val == "Default flight path: 56m":
+                self.L = float(self.val.split(':')[1].strip('m'))
+
+            else:
+                self.L = float(self.val.strip('m'))
+
+        except NameError:
+            return ctypes.windll.user32.MessageBoxA(0, "You must select an ROI first", "Error", 1)
+
+    def produceTransData(self):
+
+        scaledInensities = []
+        for scaled in self.directory.openFits.arrays:
+            scaledIntensities.append(sum(sum(scaled[a:b,c:d])))
+
+        sampleIntensities = []
+        for sample in self.directory.sampleFits.arrays:
+            sampleIntensities.append(sum(sum(sample[a:b,c:d])))
+
+        transmitted = []
+        zipped = zip(sampleIntensities, scaledIntensities)
+        for sample, scaled in zipped:
+            transmitted.append(float(sample)/float(scaled))
+
+        TOF = []
+        for header in self.directory.sampleFit.headers:
+            TOF.append(header["TOF"])
+
+        return TOF, transmitted
     
         
 class Test:
