@@ -72,7 +72,7 @@ class FitsData:
         self.arrays = arrays
         
 
-class DirectoryHandler:
+class DirectoryiHandler:
 
     def __init__(self):
         self.openPath = None
@@ -94,28 +94,28 @@ class GetDirectories:
         self.openFits = FitsData()
         self.sampleFits = FitsData()
         
-        self.openPath = None
-        self.samplePath = None
+        #self.openPath = None
+        #self.samplePath = None
 
     def getOpenPath(self):
         
         self.directory.openOpenDirectory()
-        self.openPath = self.directory.openPath
-        if os.path.exists(os.path.join(self.openPath, "scaledOpenBeam")):
-            path = os.path.join(self.openPath, "scaledOpenBeam")
+        #self.openPath = self.directory.openPath
+        if os.path.exists(os.path.join(self.directory.openPath, "scaledOpenBeam")):
+            path = os.path.join(self.directory.openPath, "scaledOpenBeam")
             self.loadData(path, self.openFits)
         else:
-            self.loadData(self.openPath, self.openFits)
+            self.loadData(self.directory.openPath, self.openFits)
         
     def getSamplePath(self):
 
         self.directory.openSampleDirectory()
-        self.samplePath = self.directory.samplePath
-        if os.path.exists(os.path.join(self.samplePath, "overlapCorrected")):
-            path = os.path.join(self.samplePath, "overlapCorrected")
+        #self.samplePath = self.directory.samplePath
+        if os.path.exists(os.path.join(self.directory.samplePath, "overlapCorrected")):
+            path = os.path.join(self.directory.samplePath, "overlapCorrected")
             self.loadData(path, self.sampleFits)
         else:
-            self.loadData(self.samplePath, self.sampleFits)
+            self.loadData(self.directory.samplePath, self.sampleFits)
 
     def loadData(self, path, container):
         f = glob.glob(os.path.join(path, "*[0-9][0-9][0-9][0-9][0-9].fits"))
@@ -136,8 +136,8 @@ class OverlapCorrectionAndScaling:
     def __init__(self, directory):
 
         self.directory = directory
-        self.openPath = self.directory.openPath
-        self.samplePath = self.directory.samplePath
+        #self.openPath = self.directory.openPath
+        #self.samplePath = self.directory.samplePath
 
         #self.openData = openData
         #self.sampleData = sampleData
@@ -336,9 +336,6 @@ class OverlapCorrectionAndScaling:
     def doBoth(self):
         self.overlapCorrection(self.directory.openPath)
         self.overlapCorrection(self.directory.samplePath)
-
-    def do(self):
-        pass
 
     
 class ShowData:
