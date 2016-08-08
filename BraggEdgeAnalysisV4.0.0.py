@@ -60,7 +60,7 @@ class BraggEdgeAnalysisGUI:
         self.transplot.add_separator()
         self.transplot.add_command(label="Plot (Wavelength)", command=lambda: TransPlot(self.directory, self.flightpath).plotTransWavelength())
         self.actionmenu.add_separator()
-        self.actionmenu.add_command(label="Fit Bragg Edge", command=lambda: EdgeFitting(TransPlot(self.directory, self.flightpath)).subPlot())
+        self.actionmenu.add_command(label="Fit Bragg Edge", command=lambda: EdgeFitting().subPlot())
         self.menubar.add_cascade(label="Actions", menu=self.actionmenu)
 
         root.config(menu=self.menubar)
