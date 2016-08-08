@@ -440,12 +440,12 @@ class TransPlot:
         except NameError:
             return ctypes.windll.user32.MessageBoxA(0, "You must select an ROI first", "Error", 1)
 
-        global transW
-        transW = None
-        global wavelength
-        wavelength = None
-        global timeOF
-        timeOF = None
+        #global transW
+        self.transW = []
+        #global wavelength
+        self.wavelength = []
+        #global timeOF
+        self.timeOF = []
 
     def produceTransData(self):
 
@@ -470,18 +470,18 @@ class TransPlot:
 
     def convertToWavelength(self, data):
 
-        wavelength = []
+        self.wavelength = []
         h = 6.6E-34
         m = 1.67E-27
         A = 10**10
         for point in data:
-            wavelength.append(((h*float(point))/(self.L*m))*A)
-        return wavelength
+            self.wavelength.append(((h*float(point))/(self.L*m))*A)
+        return self.wavelength
 
     def plotTransTOF(self):
 
         xyData = self.produceTransData()
-        timeOF = xyData[0]
+        self.timeOF = xyData[0]
 
         ymin = min(xyData[1]) - 0.05
         ymax = max(xyData[1]) + 0.05
@@ -499,13 +499,13 @@ class TransPlot:
         plt.show()
         plt.close()
 
-        return timeOF
+        return self.timeOF
 
     def plotTransWavelength(self):
 
         xyData = self.produceTransData()
-        transW = xyData[1]
-        wavelength = self.convertToWavelength(xyData[0])
+        self.transW = xyData[1]
+        self.wavelength = self.convertToWavelength(xyData[0])
 
         ymin = min(xyData[1]) - 0.05
         ymax = max(xyData[1]) + 0.05
@@ -517,14 +517,14 @@ class TransPlot:
             self.ax, self.onSelect, drawtype='box', rectprops=dict(
                 facecolor='red', edgecolor='black', alpha=0.5, fill=True))
 
-        plt.plot(wavelength, xyData[1])
+        plt.plot(self.wavelength, xyData[1])
         plt.xlabel(u"Wavelength (\u00C5)")
         plt.ylabel("Neutron Transmission")
         plt.ylim(ymin, ymax)
         plt.show()
         plt.close()
         data = None
-        return wavelength, transW
+        return self.wavelength, self.transW
 
     def onSelect(self, eclick, erelease):
         print "Start position: (%f, %f)" % (eclick.xdata, eclick.ydata)
@@ -543,9 +543,11 @@ class EdgeFitting:
 
     def __init__(self):
 
-        self.xvalsW = wavelength
-        self.trans = transW
-        self.xvalsT = timeOF
+        self.data = TransPlot()
+
+        self.xvalsW = self.data.wavelength
+        self.trans = self.data.transW
+        self.xvalsT = self.data.timeOF
         self.subx = []
         self.suby = []
 
