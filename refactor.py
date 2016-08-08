@@ -104,13 +104,13 @@ class GetDirectories:
         self.openFits = FitsData()
         self.sampleFits = FitsData()
         
-        #self.openPath = None
-        #self.samplePath = None
+        self.openPath = None
+        self.samplePath = None
 
     def getOpenPath(self):
         
         self.directory.openOpenDirectory()
-        #self.openPath = self.directory.openPath
+        self.openPath = self.directory.openPath
         if os.path.exists(os.path.join(self.directory.openPath, "scaledOpenBeam")):
             path = os.path.join(self.directory.openPath, "scaledOpenBeam")
             self.loadData(path, self.openFits)
@@ -120,7 +120,7 @@ class GetDirectories:
     def getSamplePath(self):
 
         self.directory.openSampleDirectory()
-        #self.samplePath = self.directory.samplePath
+        self.samplePath = self.directory.samplePath
         if os.path.exists(os.path.join(self.directory.samplePath, "overlapCorrected")):
             path = os.path.join(self.directory.samplePath, "overlapCorrected")
             self.loadData(path, self.sampleFits)
