@@ -305,7 +305,7 @@ class OverlapCorrectionAndScaling:
                     shutter = float(shutterValuesOpen[s][1])
                     prob = np.divide(runningTot, shutter)
                     runningTot += self.directory.openFits.arrays[i]
-                    self.directory.openFits.arrays[i] = np.round(np.divide(self.directory.openFits.arrays[i], (1 - prob))).astype(np.int16) * scaleFactor
+                    self.directory.openFits.arrays[i] = np.round((np.divide(self.directory.openFits.arrays[i], (1 - prob))) * scaleFactor).astype(np.int16)
                     
                     hdu = fits.PrimaryHDU()
                     hdu.data = self.directory.openFits.arrays[i]
