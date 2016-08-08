@@ -515,7 +515,7 @@ class TransPlot:
             self.ax, self.onSelect, drawtype='box', rectprops=dict(
                 facecolor='red', edgecolor='black', alpha=0.5, fill=True))
 
-        plt.plot(self.wavelength, xyData[1])
+        plt.plot(wavelength, xyData[1])
         plt.xlabel(u"Wavelength (\u00C5)")
         plt.ylabel("Neutron Transmission")
         plt.ylim(ymin, ymax)
