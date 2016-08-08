@@ -440,8 +440,8 @@ class TransPlot:
         except NameError:
             return ctypes.windll.user32.MessageBoxA(0, "You must select an ROI first", "Error", 1)
 
-        global TransW
-        TransW = None
+        global transW
+        transW = None
         global wavelength
         wavelength = None
         global timeOF
@@ -481,7 +481,6 @@ class TransPlot:
     def plotTransTOF(self):
 
         xyData = self.produceTransData()
-        global timeOF
         timeOF = xyData[0]
 
         ymin = min(xyData[1]) - 0.05
@@ -505,7 +504,6 @@ class TransPlot:
     def plotTransWavelength(self):
 
         xyData = self.produceTransData()
-        global transW
         transW = xyData[1]
         wavelength = self.convertToWavelength(xyData[0])
 
