@@ -5,8 +5,8 @@ import numpy as np
 import ctypes
 import scipy.special
 import warnings
-import matplotlib
-matplotlib.use("TkAgg")
+import matplotlib.colors as colors
+#matplotlib.use("TkAgg")
 from matplotlib import pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2TkAgg
 from matplotlib.figure import Figure
@@ -361,16 +361,20 @@ class ShowData:
 
         self.fig = Figure(figsize=(7, 7))
         self.ax = self.fig.add_subplot(111)
-        #self.plotted = False
-        #self.l = None
-        #self.canvas = None
+        self.plotted = False
+        self.l = None
+        self.canvas = None
         plt.show()
 
         self.slider = tk.Scale(
             self.root, from_=0, to=(len(self.directory.sampleFits.arrays) - 1), resolution=1, orient=tk.HORIZONTAL,
-            command=self.update
-        )
+            command=self.update)
         self.slider.pack()
+
+        self.vmax = tk.Entry(self.root, width=10)
+        self.vmax.insert(0, "255")
+        self.vmax.pack()
+
         self.button = tk.Button(text="Histogram Equalisation", command=self.contrast)
         self.button.pack()
 
@@ -392,7 +396,7 @@ class ShowData:
         self.plotted = True
         self.s = 0
         im = self.directory.sampleFits.arrays[self.s]
-        self.l = self.ax.imshow(im, cmap=plt.cm.gray)
+        self.l = self.ax.imshow(im, cmap=plt.cm.gray, interpolation="nearest", vmin=0, vmax=int(self.vmax.get()))
         self.canvas = FigureCanvasTkAgg(self.fig, self.root)
         self.canvas.get_tk_widget().pack()
         self.canvas.draw()
@@ -404,6 +408,7 @@ class ShowData:
         if self.plotted:
             im = self.directory.sampleFits.arrays[ind]
             self.l.set_data(im)
+            #print self.directory.sampleFits.arrays[ind]
             self.canvas.draw()
 
     def histeq(self, im, nbr_bins=256):
@@ -548,6 +553,7 @@ class TransPlot:
         dtp = erelease.ydata
         return atp, btp, ctp, dtp
 
+
 class EdgeFitting:
 
     def __init__(self):
@@ -684,7 +690,7 @@ class Test:
 
 if __name__ == "__main__":
     root = tk.Tk()
-    root.geometry("500x600")
+    #root.geometry("600x700")
     root.title("Bragg Edge Analysis")
     app = BraggEdgeAnalysisGUI(root)
     root.mainloop()
