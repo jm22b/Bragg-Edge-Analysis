@@ -5,7 +5,8 @@ import numpy as np
 import ctypes
 import scipy.special
 import warnings
-#matplotlib.use("TkAgg")
+import matplotlib
+matplotlib.use("TkAgg")
 from matplotlib import pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2TkAgg  # Note: add toolbar
 from matplotlib.figure import Figure
@@ -399,13 +400,13 @@ class ShowData:
         print "Start position: (%f, %f)" % (eclick.xdata, eclick.ydata)
         print "End position: (%f, %f)" % (erelease.xdata, erelease.ydata)
         global a
-        a = eclick.xdata
+        a = int(eclick.xdata)
         global b
-        b = erelease.xdata
+        b = int(erelease.xdata)
         global c
-        c = eclick.ydata
+        c = int(eclick.ydata)
         global d
-        d = erelease.ydata
+        d = int(erelease.ydata)
         return a, b, c, d
 
     def plot(self):
@@ -512,6 +513,8 @@ class TransPlot:
     def plotTransTOF(self):
 
         xyData = self.produceTransData()
+        global transT
+        transT = xyData[1]
         global timeOF
         timeOF = xyData[0]
 
@@ -531,7 +534,7 @@ class TransPlot:
         plt.show()
         plt.close()
 
-        return timeOF
+        return timeOF, transT
 
     def plotTransWavelength(self):
 
@@ -577,9 +580,9 @@ class EdgeFitting:
 
     def __init__(self):
 
-        self.xvalsW = wavelength
-        self.trans = transW
-        self.xvalsT = timeOF
+        # self.xvalsW = wavelength
+        # self.trans = transW
+        # self.xvalsT = timeOF
         self.subx = []
         self.suby = []
 
@@ -642,23 +645,22 @@ class EdgeFitting:
 
     def subPlot(self):
 
-        if self.xvalsW != []:
+        if wavelength == []:
 
-            zipped = zip(self.xvalsW, self.trans)
+            zipped = zip(timeOF, transT)
             for xval, yval in zipped:
                 if xval >= atp and xval <= btp:
                     self.subx.append(xval)
                     self.suby.append(yval)
-
             self.ax.plot(self.subx, self.suby, 'x')
 
         else:
-            zipped = zip(self.xvalsT, self.trans)
+
+            zipped = zip(wavelength, transW)
             for xval, yval in zipped:
                 if xval >= atp and xval <= btp:
                     self.subx.append(xval)
                     self.suby.append(yval)
-
             self.ax.plot(self.subx, self.suby, 'x')
 
     def fitCurve(self):
