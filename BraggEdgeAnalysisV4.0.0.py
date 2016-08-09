@@ -394,6 +394,7 @@ class ShowData:
     def plot(self):
 
         self.plotted = True
+
         self.s = 0
         im = self.directory.sampleFits.arrays[self.s]
         self.l = self.ax.imshow(im, cmap=plt.cm.gray, interpolation="nearest", vmin=0, vmax=int(self.vmax.get()))
@@ -407,7 +408,8 @@ class ShowData:
         ind = int(self.slider.get())
         if self.plotted:
             im = self.directory.sampleFits.arrays[ind]
-            self.l.set_data(im)
+            self.l = self.ax.imshow(im, cmap=plt.cm.gray, interpolation="nearest", vmin=0, vmax=int(self.vmax.get()))
+            #self.l.set_data(im)
             #print self.directory.sampleFits.arrays[ind]
             self.canvas.draw()
 
