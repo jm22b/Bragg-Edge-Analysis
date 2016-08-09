@@ -5,10 +5,9 @@ import numpy as np
 import ctypes
 import scipy.special
 import warnings
-import matplotlib.colors as colors
 #matplotlib.use("TkAgg")
 from matplotlib import pyplot as plt
-from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2TkAgg
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2TkAgg  # Note: add toolbar
 from matplotlib.figure import Figure
 from matplotlib.widgets import Slider, RectangleSelector
 from scipy.optimize import curve_fit, OptimizeWarning
