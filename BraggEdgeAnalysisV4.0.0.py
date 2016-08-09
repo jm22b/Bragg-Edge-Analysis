@@ -23,27 +23,25 @@ class BraggEdgeAnalysisGUI:
         self.frame = tk.Frame(self.root)
         self.frame.pack()
 
-        self.directory = GetDirectories()
-        self.test = Test(self.directory)
+        self.directory = GetDirectories()  # instantiate the class here to be passed to other classes, avoids multiples
         self.correction = OverlapCorrectionAndScaling(self.directory)
 
-        self.menubar = tk.Menu(self.root)
+        self.menubar = tk.Menu(self.root)  # creates top level menus to be populated in widgets()
         self.filemenu = tk.Menu(self.menubar, tearoff=0)
         self.actionmenu = tk.Menu(self.menubar, tearoff=0)
         self.transplot = tk.Menu(self.menubar)
-
+        # button for showing the sample images
         self.showDataButton = tk.Button(
             self.frame, text="Show Sample", width=10, command=lambda: ShowData(self.root, self.directory).plot())
-
-        #self.contrastButton = tk.Button(self.root, text="Histogram Equalisation", command=lambda: ShowData(self.root, self.directory).contrast)
+        # text field that is used for specifying the flight path of the instrument
         self.flightpath = tk.Entry(self.frame, width=30)
-
+        # calls the widgets function, populating the GUI with it's objects
         self.widgets()
 
     def widgets(self):
 
         root.option_add("*tearoff", "FALSE")
-
+        # populates top level menus and maps the commands to them
         self.filemenu.add_command(
             label="Load Open Beam", command=self.directory.getOpenPath)
         self.filemenu.add_separator()
@@ -66,7 +64,7 @@ class BraggEdgeAnalysisGUI:
         self.menubar.add_cascade(label="Actions", menu=self.actionmenu)
 
         root.config(menu=self.menubar)
-
+        # supplies a default value to the flight path
         self.flightpath.insert(0, "Default flight path: 56m")
         self.flightpath.pack()
         self.showDataButton.pack()
@@ -74,6 +72,11 @@ class BraggEdgeAnalysisGUI:
 
 
 class FitsData:
+
+    """This class acts as a data model for the open beam and sample data.
+    creating an instance of it will produce a blank template to be filled with the relevant data
+    by the loading functions
+    """
 
     def __init__(self, names=None, headers=None, arrays=None):
 
@@ -90,6 +93,8 @@ class FitsData:
         
 
 class DirectoryHandler:
+
+    # holds the methods for opening file dialogs and finding path variables
 
     def __init__(self):
         self.openPath = None
@@ -116,6 +121,8 @@ class GetDirectories:
         self.samplePath = None
 
     def getOpenPath(self):
+
+        """if scaled data exists, load it. Otherwise load original data"""
         
         self.directory.openOpenDirectory()
         self.openPath = self.directory.openPath
@@ -127,6 +134,8 @@ class GetDirectories:
         
     def getSamplePath(self):
 
+        """if overlap corrected data exists, load it. otherwise load the original data"""
+
         self.directory.openSampleDirectory()
         self.samplePath = self.directory.samplePath
         if os.path.exists(os.path.join(self.directory.samplePath, "overlapCorrected")):
@@ -136,20 +145,27 @@ class GetDirectories:
             self.loadData(self.directory.samplePath, self.sampleFits)
 
     def loadData(self, path, container):
-        f = glob.glob(os.path.join(path, "*[0-9][0-9][0-9][0-9][0-9].fits"))
+
+        """handles the loading of the data, filling up the 'container' (FitsData() instance)
+        behaves identically for both open beam and sample data"""
+
+        f = glob.glob(os.path.join(path, "*[0-9][0-9][0-9][0-9][0-9].fits"))  # relies on 5-digit numbering of files
         for fitsFile in f:
-            hdulist = fits.open(fitsFile, memmap=False)
+            hdulist = fits.open(fitsFile, memmap=False)  # memmap tries to keep things open after closing them
             name = hdulist.filename().split("\\")[-1]
             header = hdulist[0].header
             data = hdulist[0].data
             hdulist.close()
-            container.names.append(name)
+            container.names.append(name)  # populate container
             container.headers.append(header)
             container.arrays.append(data)
-            print name
+            print name  # debugging
 
             
 class OverlapCorrectionAndScaling:
+
+    """deals with overlap correction and scaling of the selected data. Needs refactoring and the reasoning about
+    what these functions will do needs pushing up towards the GUI."""
 
     def __init__(self, directory):
 
@@ -219,6 +235,8 @@ class OverlapCorrectionAndScaling:
         return shutterIndices
 
     def overlapCorrection(self, path):
+
+        """most hopeful suspect for refactoring and pushing of logic upwards."""
 
         if path == self.directory.samplePath:
 
@@ -395,8 +413,8 @@ class ShowData:
         self.plotted = True
 
         self.s = 0
-        im = self.directory.sampleFits.arrays[self.s]
-        self.l = self.ax.imshow(im, cmap=plt.cm.gray, interpolation="nearest", vmin=0, vmax=int(self.vmax.get()))
+        #im = self.directory.sampleFits.arrays[self.s]
+        #self.l = self.ax.imshow(im, cmap=plt.cm.gray, interpolation="nearest", vmin=0, vmax=int(self.vmax.get()))
         self.canvas = FigureCanvasTkAgg(self.fig, self.root)
         self.canvas.get_tk_widget().pack()
         self.canvas.draw()
@@ -678,15 +696,6 @@ class EdgeFitting:
         fields = [self.coeff1, self.coeff2, self.lambda0var, self.sigmavar, self.tauvar]
         for field in fields:
             field.delete(0, "end")
-
-
-class Test:
-
-    def __init__(self, dir):
-        self.a = dir
-
-    def do(self):
-        print self.a.openFits.arrays[100]
 
 
 if __name__ == "__main__":
