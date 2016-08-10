@@ -484,11 +484,11 @@ class TransPlot:
 
         scaledIntensities = []
         for scaled in self.directory.openFits.arrays:
-            scaledIntensities.append(sum(sum(scaled[a:b, c:d])))
+            scaledIntensities.append(sum(sum(scaled[c:d, a:b])))
 
         sampleIntensities = []
         for sample in self.directory.sampleFits.arrays:
-            sampleIntensities.append(sum(sum(sample[a:b, c:d])))
+            sampleIntensities.append(sum(sum(sample[c:d, a:b])))
 
         transmitted = []
         zipped = zip(sampleIntensities, scaledIntensities)
