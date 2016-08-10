@@ -390,7 +390,7 @@ class ShowData:
         self.slider.pack()
 
         self.vmax = tk.Entry(self.root, width=10)
-        self.vmax.insert(0, "255")
+        self.vmax.insert(0, "100")
         self.vmax.pack()
 
         self.button = tk.Button(text="Histogram Equalisation", command=self.contrast)
@@ -587,7 +587,7 @@ class EdgeFitting:
         self.suby = []
 
         self.frame = tk.Toplevel()
-        self.fig = Figure(figsize=(5, 5), dpi=100)
+        self.fig = Figure(figsize=(5, 5))
         self.ax = self.fig.add_subplot(111)
 
         self.canvas = FigureCanvasTkAgg(self.fig, master=self.frame)
