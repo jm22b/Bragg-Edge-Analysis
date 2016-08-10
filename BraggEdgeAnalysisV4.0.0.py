@@ -302,7 +302,7 @@ class OverlapCorrectionAndScaling:
         else:
             shutterIndices = self.preBinData(path)
             shutterValuesOpen = self.readShutter(path)[0]
-            shutterValuesSample = self.readShutter(path)[0]
+            shutterValuesSample = self.readShutter(self.directory.samplePath)[0]
 
             zipShutters = zip(shutterValuesOpen, shutterValuesSample)
             ratio = []
