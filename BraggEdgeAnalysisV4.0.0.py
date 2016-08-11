@@ -527,6 +527,7 @@ class TransPlot:
         self.myrectsel = MyRectangleSelector(
             self.ax, self.onSelect, drawtype='box', rectprops=dict(
                 facecolor='red', edgecolor='black', alpha=0.5, fill=True))
+        plt.cla()
         plt.plot(xyData[0], xyData[1])
         plt.ylim(ymin, ymax)
         plt.xlabel("Time of Flight (s)")
@@ -553,7 +554,7 @@ class TransPlot:
         self.myrectsel = MyRectangleSelector(
             self.ax, self.onSelect, drawtype='box', rectprops=dict(
                 facecolor='red', edgecolor='black', alpha=0.5, fill=True))
-
+        plt.cla()
         plt.plot(wavelength, xyData[1])
         plt.xlabel(u"Wavelength (\u00C5)")
         plt.ylabel("Neutron Transmission")
