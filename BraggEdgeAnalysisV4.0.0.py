@@ -244,9 +244,9 @@ class OverlapCorrectionAndScaling:
         shutterIndices = self.preBinData(path)
         shutterValues = self.readShutter(path)[0]
 
-        if os.path.exists(path + "/overlapCorrected"):
+        #if os.path.exists(path + "/overlapCorrected"):
 
-            return ctypes.windll.user32.MessageBoxA(0, "Corrected files already exist", "Error", 1)
+            #return ctypes.windll.user32.MessageBoxA(0, "Corrected files already exist", "Error", 1)
 
         os.mkdir(path + "/overlapCorrected")
         f = open(path + "/overlapCorrected/TOFData.csv", "wb")
@@ -289,8 +289,8 @@ class OverlapCorrectionAndScaling:
         for svo, svs in zipShutters:
             ratio.append(float(svs[1]) / float(svo[1]))
 
-        if os.path.exists(path + "/scaledOpenBeam"):
-           return ctypes.windll.user32.MessageBoxA(0, "Scaled files already exist", "Error", 1)
+        #if os.path.exists(path + "/scaledOpenBeam"):
+           #return ctypes.windll.user32.MessageBoxA(0, "Scaled files already exist", "Error", 1)
 
         os.mkdir(path + "/scaledOpenBeam")
         f = open(path + "/scaledOpenBeam/TOFData.csv", "wb")
@@ -327,8 +327,14 @@ class OverlapCorrectionAndScaling:
 
     def doBoth(self):
         try:
-            self.overlapCorrection(self.directory.samplePath)
-            self.overlapCorrectionScaling(self.directory.openPath)
+            if not os.path.exists(os.path.join(self.directory.samplePath, "overlapCorrected")):
+                self.overlapCorrection(self.directory.samplePath)
+            else:
+                ctypes.windll.user32.MessageBoxA(0, "Corrected files already exist.", "Error", 1)
+            if not os.path.exists(os.path.join(self.directory.openPath, "scaledOpenBeam")):
+                self.overlapCorrectionScaling(self.directory.openPath)
+            else:
+                ctypes.windll.user32.MessageBoxA(0, "Scaled and corrected files already exist.", "Error", 1)
         except TypeError:
             return ctypes.windll.user32.MessageBoxA(0, "You need to select some data", "Error", 1)
 
