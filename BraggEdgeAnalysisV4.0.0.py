@@ -66,6 +66,9 @@ class BraggEdgeAnalysisGUI:
             label="Plot (Wavelength)", command=lambda: TransPlot(self.directory, self.flightpath).plotTransWavelength())
         self.actionmenu.add_separator()
         self.actionmenu.add_command(label="Fit Bragg Edge", command=lambda: EdgeFitting().subPlot())
+        self.actionmenu.add_separator()
+        self.actionmenu.add_command(
+            label="Z-axis Profile", command=lambda: TransPlot(self.directory, self.flightpath).ZAxisProfile())
         self.menubar.add_cascade(label="Actions", menu=self.actionmenu)
 
         root.config(menu=self.menubar)
@@ -477,6 +480,7 @@ class TransPlot:
         else:
             self.L = float(self.val.strip('m'))
 
+        self.curr_pos = 0
 
         global transW
         transW = []
@@ -569,6 +573,39 @@ class TransPlot:
         plt.show()
         plt.close()
         return wavelength, transW
+
+    def ZAxisProfile(self):
+
+
+        TOF = []
+        for header in self.directory.sampleFits.headers:
+            TOF.append(header['TOF'])
+
+        wavelength = self.convertToWavelength(TOF)
+
+        avg = []
+        for data in self.directory.sampleFits.arrays:
+            avg.append(np.mean(data[c:d, a:b]))
+
+        self.plots = [(TOF, avg), (wavelength, avg)]
+        self.fig = plt.figure()
+        self.fig.canvas.mpl_connect("key_press_event", self.key_event)
+        self.ax = self.fig.add_subplot(111)
+        self.ax.plot(TOF, avg)
+        plt.show()
+
+    def key_event(self, e):
+
+        if e.key == "right":
+            self.curr_pos += 1
+        elif e.key == "left":
+            self.curr_pos -= 1
+        else:
+            return
+        self.curr_pos %= len(self.plots)
+        self.ax.cla()
+        self.ax.plot(self.plots[self.curr_pos][0], self.plots[self.curr_pos][1])
+        self.fig.canvas.draw()
 
     def onSelect(self, eclick, erelease):
         print "Start position: (%f, %f)" % (eclick.xdata, eclick.ydata)
