@@ -239,136 +239,98 @@ class OverlapCorrectionAndScaling:
 
         """most hopeful suspect for refactoring and pushing of logic upwards."""
 
-        if path == self.directory.samplePath:
 
-            shutterIndices = self.preBinData(path)
-            shutterValues = self.readShutter(path)[0]
 
-            if os.path.exists(path + "/overlapCorrected"):
+        shutterIndices = self.preBinData(path)
+        shutterValues = self.readShutter(path)[0]
 
-                return ctypes.windll.user32.MessageBoxA(0, "Corrected files already exist", "Error", 1)
+        if os.path.exists(path + "/overlapCorrected"):
 
-            os.mkdir(path + "/overlapCorrected")
-            f = open(path + "/overlapCorrected/TOFData.csv", "wb")
-            #zipped = zip(self.sampleFits.arrays, self.sampleFits.headers, self.sampleFits.names)
-            s = 0
-            for subIndex in shutterIndices:
-                #subList = zipped[subIndex[0]:subIndex[-1]+1]
-                runningTot = np.zeros((512, 512))
+            return ctypes.windll.user32.MessageBoxA(0, "Corrected files already exist", "Error", 1)
 
-                for i in range(subIndex[0], subIndex[0]+len(subIndex)):
-                    shutter = float(shutterValues[s][1])
-                    prob = np.divide(runningTot, shutter)
-                    runningTot += self.directory.sampleFits.arrays[i]
-                    self.directory.sampleFits.arrays[i] = np.round(
-                        np.divide(self.directory.sampleFits.arrays[i], (1 - prob))).astype(np.int16)
-                    hdu = fits.PrimaryHDU()
-                    hdu.data = self.directory.sampleFits.arrays[i]
-                    counts = sum(sum(self.directory.sampleFits.arrays[i]))
-                    hdu.header = self.directory.sampleFits.headers[i]
-                    hdu.header["N_COUNTS"] = counts
-                    TOF = hdu.header["TOF"]
+        os.mkdir(path + "/overlapCorrected")
+        f = open(path + "/overlapCorrected/TOFData.csv", "wb")
+        #zipped = zip(self.sampleFits.arrays, self.sampleFits.headers, self.sampleFits.names)
+        s = 0
+        for subIndex in shutterIndices:
+            #subList = zipped[subIndex[0]:subIndex[-1]+1]
+            runningTot = np.zeros((512, 512))
+
+            for i in range(subIndex[0], subIndex[0]+len(subIndex)):
+                shutter = float(shutterValues[s][1])
+                prob = np.divide(runningTot, shutter)
+                runningTot += self.directory.sampleFits.arrays[i]
+                self.directory.sampleFits.arrays[i] = np.round(
+                    np.divide(self.directory.sampleFits.arrays[i], (1 - prob))).astype(np.int16)
+                hdu = fits.PrimaryHDU()
+                hdu.data = self.directory.sampleFits.arrays[i]
+                counts = sum(sum(self.directory.sampleFits.arrays[i]))
+                hdu.header = self.directory.sampleFits.headers[i]
+                hdu.header["N_COUNTS"] = counts
+                TOF = hdu.header["TOF"]
+                line = "%.16f, %d\n" % (TOF, counts)
+                f.writelines(line)
+
+                hdu.writeto(path + "/overlapCorrected/corrected"+self.directory.sampleFits.names[i])
+                print i
+            print s
+            s += 1
+        f.close()
+        print self.directory.sampleFits.arrays[100]
+
+    def overlapCorrectionScaling(self, path):
+
+        shutterIndices = self.preBinData(path)
+        shutterValuesOpen = self.readShutter(path)[0]
+        shutterValuesSample = self.readShutter(self.directory.samplePath)[0]
+
+        zipShutters = zip(shutterValuesOpen, shutterValuesSample)
+        ratio = []
+        for svo, svs in zipShutters:
+            ratio.append(float(svs[1]) / float(svo[1]))
+
+        if os.path.exists(path + "/scaledOpenBeam"):
+           return ctypes.windll.user32.MessageBoxA(0, "Scaled files already exist", "Error", 1)
+
+        os.mkdir(path + "/scaledOpenBeam")
+        f = open(path + "/scaledOpenBeam/TOFData.csv", "wb")
+        # zipped = zip(self.openFits.arrays, self.openFits.headers, self.openFits.names)
+        s = 0
+
+        for subIndex in shutterIndices:
+            # sublist = zipped[subIndex[0]:subIndex[-1]+1]
+            runningTot = np.zeros((512, 512))
+            scaleFactor = ratio[s]
+
+            for i in range(subIndex[0], subIndex[0]+len(subIndex)):
+                shutter = float(shutterValuesOpen[s][1])
+                prob = np.divide(runningTot, shutter)
+                runningTot += self.directory.openFits.arrays[i]
+                self.directory.openFits.arrays[i] = np.round((np.divide(self.directory.openFits.arrays[i], (1 - prob))) * scaleFactor).astype(np.int16)
                     
-                    line = "%.16f, %d\n" % (TOF, counts)
-                    f.writelines(line)
+                hdu = fits.PrimaryHDU()
+                hdu.data = self.directory.openFits.arrays[i]
+                counts = sum(sum(self.directory.openFits.arrays[i]))
+                hdu.header = self.directory.openFits.headers[i]
+                hdu.header["N_COUNTS"] = counts
+                TOF = hdu.header["TOF"]
 
-                    hdu.writeto(path + "/overlapCorrected/corrected"+self.directory.sampleFits.names[i])
-                    print i
+                line = "%.16f, %d\n" % (TOF, counts)
+                f.writelines(line)
 
-                # for data, header, name in subList:
-
-                    # shutter = float(shutterValues[s][1])
-                    # prob = np.divide(runningTot, shutter)
-                    # runningTot += data
-                    # correction = np.round(np.divide(data, (1 - prob))).astype(np.int16)
-
-                    # hdu = fits.PrimaryHDU()
-                    # hdu.data = correction
-                    # hdu.header = header
-                    # counts = sum(sum(correction))
-                    # hdu.header["N_COUNTS"] = counts
-                    # TOF = hdu.header["TOF"]
-
-                    # line = "%.16f, %d\n" % (TOF, counts)
-                    # f.writelines(line)
-
-                    # hdu.writeto(path + "/overlapCorrected/corrected"+name)
-                    # print name
-                print s
-                s += 1
-            f.close()
-            print self.directory.sampleFits.arrays[100]
-
-        else:
-            shutterIndices = self.preBinData(path)
-            shutterValuesOpen = self.readShutter(path)[0]
-            shutterValuesSample = self.readShutter(self.directory.samplePath)[0]
-
-            zipShutters = zip(shutterValuesOpen, shutterValuesSample)
-            ratio = []
-            for svo, svs in zipShutters:
-                ratio.append(float(svs[1]) / float(svo[1]))
-
-            if os.path.exists(path + "/scaledOpenBeam"):
-                return ctypes.windll.user32.MessageBoxA(0, "Scaled files already exist", "Error", 1)
-
-            os.mkdir(path + "/scaledOpenBeam")
-            f = open(path + "/scaledOpenBeam/TOFData.csv", "wb")
-            # zipped = zip(self.openFits.arrays, self.openFits.headers, self.openFits.names)
-            s = 0
-
-            for subIndex in shutterIndices:
-                # sublist = zipped[subIndex[0]:subIndex[-1]+1]
-                runningTot = np.zeros((512, 512))
-                scaleFactor = ratio[s]
-
-                for i in range(subIndex[0], subIndex[0]+len(subIndex)):
-                    shutter = float(shutterValuesOpen[s][1])
-                    prob = np.divide(runningTot, shutter)
-                    runningTot += self.directory.openFits.arrays[i]
-                    self.directory.openFits.arrays[i] = np.round((np.divide(self.directory.openFits.arrays[i], (1 - prob))) * scaleFactor).astype(np.int16)
-                    
-                    hdu = fits.PrimaryHDU()
-                    hdu.data = self.directory.openFits.arrays[i]
-                    counts = sum(sum(self.directory.openFits.arrays[i]))
-                    hdu.header = self.directory.openFits.headers[i]
-                    hdu.header["N_COUNTS"] = counts
-                    TOF = hdu.header["TOF"]
-                    
-                    line = "%.16f, %d\n" % (TOF, counts)
-                    f.writelines(line)
-
-                    hdu.writeto(path + "/scaledOpenBeam/scaled"+self.directory.sampleFits.names[i])
-                    print i
-
-                # for data, header, name in sublist:
-                    # shutter = float(shutterValuesOpen[s][1])
-                    # prob = np.divide(runningTot, shutter)
-                    # runningTot += data
-                    # correction = np.round(np.divide(data, (1 - prob))).astype(np.int16)
-                    # scaled = correction * scaleFactor
-
-                    # hdu = fits.PrimaryHDU()
-                    # hdu.data = scaled
-                    # hdu.header = header
-                    # counts = sum(sum(scaled))
-                    # hdu.header["N_COUNTS"] = counts
-                    # TOF = hdu.header["TOF"]
-
-                    # line = "%.16f, %d\n" % (TOF, counts)
-                    # f.writelines(line)
-
-                    # hdu.writeto(path + "/scaledOpenBeam/scaled" + name)
-                    # print name
-                print s
-                s += 1
-            f.close()
-            print self.directory.openFits.arrays[100] 
+                hdu.writeto(path + "/scaledOpenBeam/scaled"+self.directory.sampleFits.names[i])
+                print i
+            print s
+            s += 1
+        f.close()
+        print self.directory.openFits.arrays[100]
 
     def doBoth(self):
-        self.overlapCorrection(self.directory.openPath)
-        self.overlapCorrection(self.directory.samplePath)
-
+        try:
+            self.overlapCorrection(self.directory.openPath)
+            self.overlapCorrectionScaling(self.directory.samplePath)
+        except TypeError:
+            return ctypes.windll.user32.MessageBoxA(0, "You need to select some data", "Error", 1)
     
 class ShowData:
 
