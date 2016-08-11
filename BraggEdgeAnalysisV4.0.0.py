@@ -52,7 +52,7 @@ class BraggEdgeAnalysisGUI:
         self.filemenu.add_command(label="Exit", command=root.destroy)
         self.menubar.add_cascade(label="File", menu=self.filemenu)
 
-        self.actionmenu.add_command(label="Correct & Scale Data", command=self.correction.doBoth)
+        self.actionmenu.add_command(label="Correct & Scale Data", command=lambda: self.correction.doBoth(np.int16))
         self.actionmenu.add_separator()
         self.actionmenu.add_cascade(label="Transmission", menu=self.transplot)
         self.transplot.add_command(
@@ -127,8 +127,8 @@ class GetDirectories:
         
         self.directory.openOpenDirectory()
         self.openPath = self.directory.openPath
-        if os.path.exists(os.path.join(self.directory.openPath, "scaledOpenBeam")):
-            path = os.path.join(self.directory.openPath, "scaledOpenBeam")
+        if os.path.exists(os.path.join(self.directory.openPath, "16-bit-scaledOpenBeam")):
+            path = os.path.join(self.directory.openPath, "16-bit-scaledOpenBeam")
             self.loadData(path, self.openFits)
         else:
             self.loadData(self.directory.openPath, self.openFits)
@@ -139,8 +139,8 @@ class GetDirectories:
 
         self.directory.openSampleDirectory()
         self.samplePath = self.directory.samplePath
-        if os.path.exists(os.path.join(self.directory.samplePath, "overlapCorrected")):
-            path = os.path.join(self.directory.samplePath, "overlapCorrected")
+        if os.path.exists(os.path.join(self.directory.samplePath, "16-bit-overlapCorrected")):
+            path = os.path.join(self.directory.samplePath, "16-bit-overlapCorrected")
             self.loadData(path, self.sampleFits)
         else:
             self.loadData(self.directory.samplePath, self.sampleFits)
@@ -235,46 +235,58 @@ class OverlapCorrectionAndScaling:
                     break
         return shutterIndices
 
-    def overlapCorrection(self, path):
+    def overlapCorrection(self, path, bits):
 
         """most hopeful suspect for refactoring and pushing of logic upwards."""
 
         shutterIndices = self.preBinData(path)
         shutterValues = self.readShutter(path)[0]
 
-        os.mkdir(os.path.join(path, "overlapCorrected"))
-        self.f = open(os.path.join(path, "overlapCorrected", "TOFData.csv"), "wb")
+
+        if bits == np.int16:
+            os.mkdir(os.path.join(path, "16-bit-overlapCorrected"))
+            self.f = open(os.path.join(path, "16-bit-overlapCorrected", "TOFData.csv"), "wb")
         #zipped = zip(self.sampleFits.arrays, self.sampleFits.headers, self.sampleFits.names)
-        s = 0
-        for subIndex in shutterIndices:
-            #subList = zipped[subIndex[0]:subIndex[-1]+1]
-            runningTot = np.zeros((512, 512))
+            s = 0
+            for subIndex in shutterIndices:
+                #subList = zipped[subIndex[0]:subIndex[-1]+1]
+                runningTot = np.zeros((512, 512))
 
-            for i in range(subIndex[0], subIndex[0]+len(subIndex)):
-                shutter = float(shutterValues[s][1])
-                prob = np.divide(runningTot, shutter)
-                runningTot += self.directory.sampleFits.arrays[i]
-                self.directory.sampleFits.arrays[i] = np.round(
-                    np.divide(self.directory.sampleFits.arrays[i], (1 - prob))).astype(np.int16)
-                self.writeToFolder(
-                    self.directory.sampleFits.arrays[i], self.directory.sampleFits.headers[i], self.directory.sampleFits.names[i], path, "overlapCorrected", "corrected")
-                #hdu = fits.PrimaryHDU()
-                #hdu.data = self.directory.sampleFits.arrays[i]
-                #counts = sum(sum(self.directory.sampleFits.arrays[i]))
-                #hdu.header = self.directory.sampleFits.headers[i]
-                #hdu.header["N_COUNTS"] = counts
-                #TOF = hdu.header["TOF"]
-                #line = "%.16f, %d\n" % (TOF, counts)
-                #f.writelines(line)
+                for i in range(subIndex[0], subIndex[0]+len(subIndex)):
+                    shutter = float(shutterValues[s][1])
+                    prob = np.divide(runningTot, shutter)
+                    runningTot += self.directory.sampleFits.arrays[i]
+                    self.directory.sampleFits.arrays[i] = np.round(
+                        np.divide(self.directory.sampleFits.arrays[i], (1 - prob))).astype(np.int16)
+                    self.writeToFolder(
+                        self.directory.sampleFits.arrays[i], self.directory.sampleFits.headers[i],
+                        self.directory.sampleFits.names[i], path, "16-bit-overlapCorrected", "16-bit-corrected")
+                    print i
+                print s
+                s += 1
+        else:
+            os.mkdir(os.path.join(path, "32-bit-overlapCorrected"))
+            self.f = open(os.path.join(path, "32-bit-overlapCorrected", "TOFData.csv"), "wb")
+            s = 0
+            for subIndex in shutterIndices:
+                runningTot = np.zeros((512, 512))
+                for i in range(subIndex[0], subIndex[0]+len(subIndex)):
+                    shutter = float(shutterValues[s][1])
+                    prob = np.divide(runningTot, shutter)
+                    runningTot += self.directory.sampleFits.arrays[i]
+                    self.directory.sampleFits.arrays[i] = (
+                        np.divide(self.directory.sampleFits.arrays[i], (1 - prob))).astype(bits)
+                    self.writeToFolder(
+                        self.directory.sampleFits.arrays[i], self.directory.sampleFits.headers[i],
+                        self.directory.sampleFits.names[i], path, "overlapCorrected", "32-bit-corrected")
+                    print i
+                print s
+                s += 1
 
-                #hdu.writeto(os.path.join(path, "overlapCorrected/corrected", self.directory.sampleFits.names[i]))
-                print i
-            print s
-            s += 1
         self.f.close()
         print self.directory.sampleFits.arrays[100]
 
-    def overlapCorrectionScaling(self, path):
+    def overlapCorrectionScaling(self, path, bits):
 
         shutterIndices = self.preBinData(path)
         shutterValuesOpen = self.readShutter(path)[0]
@@ -285,38 +297,53 @@ class OverlapCorrectionAndScaling:
         for svo, svs in zipShutters:
             ratio.append(float(svs[1]) / float(svo[1]))
 
-        os.mkdir(os.path.join(path, "scaledOpenBeam"))
-        self.f = open(os.path.join(path, "scaledOpenBeam", "TOFData.csv"), "wb")
+        if bits == np.int16:
+            os.mkdir(os.path.join(path, "16-bit-scaledOpenBeam"))
+            self.f = open(os.path.join(path, "16-bit-scaledOpenBeam", "TOFData.csv"), "wb")
+            #fmod = str(bits).split('.')[-1][0:-2]
+            s = 0
+            for subIndex in shutterIndices:
+                # sublist = zipped[subIndex[0]:subIndex[-1]+1]
+                runningTot = np.zeros((512, 512))
+                scaleFactor = ratio[s]
+
+                for i in range(subIndex[0], subIndex[0] + len(subIndex)):
+                    shutter = float(shutterValuesOpen[s][1])
+                    prob = np.divide(runningTot, shutter)
+                    runningTot += self.directory.openFits.arrays[i]
+                    self.directory.openFits.arrays[i] = np.round(
+                        (np.divide(self.directory.openFits.arrays[i], (1 - prob))) * scaleFactor).astype(bits)
+                    self.writeToFolder(
+                        self.directory.openFits.arrays[i], self.directory.openFits.headers[i],
+                        self.directory.openFits.names[i], path, "16-bit-scaledOpenBeam", "16-bit-scaled")
+                    print i
+                print s
+                s += 1
+
+        else:
+            os.mkdir(os.path.join(path, "32-bit-scaledOpenBeam"))
+            self.f = open(os.path.join(path, "32-bit-scaledOpenBeam", "TOFData.csv"), "wb")
+            #fmod = str(bits).split('.')[-1][0:-2]
         # zipped = zip(self.openFits.arrays, self.openFits.headers, self.openFits.names)
-        s = 0
+            s = 0
 
-        for subIndex in shutterIndices:
-            # sublist = zipped[subIndex[0]:subIndex[-1]+1]
-            runningTot = np.zeros((512, 512))
-            scaleFactor = ratio[s]
+            for subIndex in shutterIndices:
+                # sublist = zipped[subIndex[0]:subIndex[-1]+1]
+                runningTot = np.zeros((512, 512))
+                scaleFactor = ratio[s]
 
-            for i in range(subIndex[0], subIndex[0]+len(subIndex)):
-                shutter = float(shutterValuesOpen[s][1])
-                prob = np.divide(runningTot, shutter)
-                runningTot += self.directory.openFits.arrays[i]
-                self.directory.openFits.arrays[i] = np.round(
-                    (np.divide(self.directory.openFits.arrays[i], (1 - prob))) * scaleFactor).astype(np.int16)
-                self.writeToFolder(
-                    self.directory.openFits.arrays[i], self.directory.openFits.headers[i], self.directory.openFits.names[i], path, "scaledOpenBeam", "scaled")
-                #hdu = fits.PrimaryHDU()
-                #hdu.data = self.directory.openFits.arrays[i]
-                #counts = sum(sum(self.directory.openFits.arrays[i]))
-                #hdu.header = self.directory.openFits.headers[i]
-                #hdu.header["N_COUNTS"] = counts
-                #TOF = hdu.header["TOF"]
-
-                #line = "%.16f, %d\n" % (TOF, counts)
-                #f.writelines(line)
-
-                #hdu.writeto(os.path.join(path, "scaledOpenBeam", "scaled", self.directory.sampleFits.names[i]))
-                print i
-            print s
-            s += 1
+                for i in range(subIndex[0], subIndex[0]+len(subIndex)):
+                    shutter = float(shutterValuesOpen[s][1])
+                    prob = np.divide(runningTot, shutter)
+                    runningTot += self.directory.openFits.arrays[i]
+                    self.directory.openFits.arrays[i] = (
+                        (np.divide(self.directory.openFits.arrays[i], (1 - prob))) * scaleFactor).astype(bits)
+                    self.writeToFolder(
+                        self.directory.openFits.arrays[i], self.directory.openFits.headers[i],
+                        self.directory.openFits.names[i], path, "32-bit-scaledOpenBeam", "32-bit-scaled")
+                    print i
+                print s
+                s += 1
         self.f.close()
         print self.directory.openFits.arrays[100]
 
@@ -332,14 +359,15 @@ class OverlapCorrectionAndScaling:
         self.f.writelines(line)
         hdu.writeto(os.path.join(path, mod1, mod2 + name))
 
-    def doBoth(self):
+    def doBoth(self, bits):
         try:
-            if not os.path.exists(os.path.join(self.directory.samplePath, "overlapCorrected")):
-                self.overlapCorrection(self.directory.samplePath)
+            fmod = str(bits).split('.')[-1][0:-2][-2:] + "-bit-"
+            if not os.path.exists(os.path.join(self.directory.samplePath, fmod+"overlapCorrected")):
+                self.overlapCorrection(self.directory.samplePath, bits)
             else:
                 ctypes.windll.user32.MessageBoxA(0, "Corrected files already exist.", "Error", 1)
-            if not os.path.exists(os.path.join(self.directory.openPath, "scaledOpenBeam")):
-                self.overlapCorrectionScaling(self.directory.openPath)
+            if not os.path.exists(os.path.join(self.directory.openPath, fmod+"scaledOpenBeam")):
+                self.overlapCorrectionScaling(self.directory.openPath, bits)
             else:
                 ctypes.windll.user32.MessageBoxA(0, "Scaled and corrected files already exist.", "Error", 1)
         except TypeError:
@@ -666,7 +694,8 @@ class EdgeFitting:
             self.ax.plot(self.subx, self.suby, 'x')
             x = np.linspace(self.subx[0], self.subx[-1], 100)
             self.ax.plot(
-                x, self.func(x, initial_guess[0], initial_guess[1], initial_guess[2], initial_guess[3], initial_guess[4]))
+                x, self.func(
+                    x, initial_guess[0], initial_guess[1], initial_guess[2], initial_guess[3], initial_guess[4]))
             self.canvas.show()
             return ctypes.windll.user32.MessageBoxA(0, "Please refine your parameters", "Error", 1)
 
