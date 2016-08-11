@@ -327,8 +327,8 @@ class OverlapCorrectionAndScaling:
 
     def doBoth(self):
         try:
-            self.overlapCorrection(self.directory.openPath)
-            self.overlapCorrectionScaling(self.directory.samplePath)
+            self.overlapCorrection(self.directory.samplePath)
+            self.overlapCorrectionScaling(self.directory.openPath)
         except TypeError:
             return ctypes.windll.user32.MessageBoxA(0, "You need to select some data", "Error", 1)
     
