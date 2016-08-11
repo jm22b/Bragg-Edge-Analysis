@@ -31,6 +31,7 @@ class BraggEdgeAnalysisGUI:
         self.filemenu = tk.Menu(self.menubar, tearoff=0)
         self.actionmenu = tk.Menu(self.menubar, tearoff=0)
         self.transplot = tk.Menu(self.menubar)
+        self.bits = tk.Menu(self.menubar, tearoff=0)
         # button for showing the sample images
         self.showDataButton = tk.Button(
             self.frame, text="Show Sample", width=10, command=lambda: ShowData(self.root, self.directory).plot())
@@ -52,7 +53,10 @@ class BraggEdgeAnalysisGUI:
         self.filemenu.add_command(label="Exit", command=root.destroy)
         self.menubar.add_cascade(label="File", menu=self.filemenu)
 
-        self.actionmenu.add_command(label="Correct & Scale Data", command=lambda: self.correction.doBoth(np.int16))
+        self.actionmenu.add_cascade(label="Correct & Scale Data", menu=self.bits)
+        self.bits.add_command(label="16 Bit Integer Data", command=lambda: self.correction.doBoth(np.int16))
+        self.bits.add_separator()
+        self.bits.add_command(label="32 Bit Float Data", command=lambda: self.correction.doBoth(np.float32))
         self.actionmenu.add_separator()
         self.actionmenu.add_cascade(label="Transmission", menu=self.transplot)
         self.transplot.add_command(
@@ -127,11 +131,11 @@ class GetDirectories:
         
         self.directory.openOpenDirectory()
         self.openPath = self.directory.openPath
-        if os.path.exists(os.path.join(self.directory.openPath, "16-bit-scaledOpenBeam")):
-            path = os.path.join(self.directory.openPath, "16-bit-scaledOpenBeam")
-            self.loadData(path, self.openFits)
-        else:
-            self.loadData(self.directory.openPath, self.openFits)
+        #if os.path.exists(os.path.join(self.directory.openPath, "16-bit-scaledOpenBeam")):
+            #path = os.path.join(self.directory.openPath, "16-bit-scaledOpenBeam")
+        self.loadData(self.directory.openPath, self.openFits)
+        #else:
+            #self.loadData(self.directory.openPath, self.openFits)
         
     def getSamplePath(self):
 
@@ -139,11 +143,11 @@ class GetDirectories:
 
         self.directory.openSampleDirectory()
         self.samplePath = self.directory.samplePath
-        if os.path.exists(os.path.join(self.directory.samplePath, "16-bit-overlapCorrected")):
-            path = os.path.join(self.directory.samplePath, "16-bit-overlapCorrected")
-            self.loadData(path, self.sampleFits)
-        else:
-            self.loadData(self.directory.samplePath, self.sampleFits)
+        #if os.path.exists(os.path.join(self.directory.samplePath, "16-bit-overlapCorrected")):
+            #path = os.path.join(self.directory.samplePath, "16-bit-overlapCorrected")
+        self.loadData(self.directory.samplePath, self.sampleFits)
+        #else:
+            #self.loadData(self.directory.samplePath, self.sampleFits)
 
     def loadData(self, path, container):
 
@@ -278,7 +282,7 @@ class OverlapCorrectionAndScaling:
                         np.divide(self.directory.sampleFits.arrays[i], (1 - prob))).astype(bits)
                     self.writeToFolder(
                         self.directory.sampleFits.arrays[i], self.directory.sampleFits.headers[i],
-                        self.directory.sampleFits.names[i], path, "overlapCorrected", "32-bit-corrected")
+                        self.directory.sampleFits.names[i], path, "32-bit-overlapCorrected", "32-bit-corrected")
                     print i
                 print s
                 s += 1
