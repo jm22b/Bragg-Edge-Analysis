@@ -239,17 +239,11 @@ class OverlapCorrectionAndScaling:
 
         """most hopeful suspect for refactoring and pushing of logic upwards."""
 
-
-
         shutterIndices = self.preBinData(path)
         shutterValues = self.readShutter(path)[0]
 
-        #if os.path.exists(path + "/overlapCorrected"):
-
-            #return ctypes.windll.user32.MessageBoxA(0, "Corrected files already exist", "Error", 1)
-
-        os.mkdir(path + "/overlapCorrected")
-        f = open(path + "/overlapCorrected/TOFData.csv", "wb")
+        os.mkdir(os.path.join(path, "overlapCorrected"))
+        f = open(os.path.join(path, "overlapCorrected/TOFData.csv"), "wb")
         #zipped = zip(self.sampleFits.arrays, self.sampleFits.headers, self.sampleFits.names)
         s = 0
         for subIndex in shutterIndices:
@@ -271,7 +265,7 @@ class OverlapCorrectionAndScaling:
                 line = "%.16f, %d\n" % (TOF, counts)
                 f.writelines(line)
 
-                hdu.writeto(path + "/overlapCorrected/corrected"+self.directory.sampleFits.names[i])
+                hdu.writeto(os.path.join(path, "overlapCorrected/corrected", self.directory.sampleFits.names[i]))
                 print i
             print s
             s += 1
@@ -289,11 +283,8 @@ class OverlapCorrectionAndScaling:
         for svo, svs in zipShutters:
             ratio.append(float(svs[1]) / float(svo[1]))
 
-        #if os.path.exists(path + "/scaledOpenBeam"):
-           #return ctypes.windll.user32.MessageBoxA(0, "Scaled files already exist", "Error", 1)
-
-        os.mkdir(path + "/scaledOpenBeam")
-        f = open(path + "/scaledOpenBeam/TOFData.csv", "wb")
+        os.mkdir(os.path.join(path, "scaledOpenBeam"))
+        f = open(os.path.join(path, "scaledOpenBeam/TOFData.csv"), "wb")
         # zipped = zip(self.openFits.arrays, self.openFits.headers, self.openFits.names)
         s = 0
 
@@ -318,7 +309,7 @@ class OverlapCorrectionAndScaling:
                 line = "%.16f, %d\n" % (TOF, counts)
                 f.writelines(line)
 
-                hdu.writeto(path + "/scaledOpenBeam/scaled"+self.directory.sampleFits.names[i])
+                hdu.writeto(os.path.join(path, "scaledOpenBeam", "scaled", self.directory.sampleFits.names[i]))
                 print i
             print s
             s += 1
