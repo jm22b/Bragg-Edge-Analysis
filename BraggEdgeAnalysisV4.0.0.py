@@ -243,7 +243,7 @@ class OverlapCorrectionAndScaling:
         shutterValues = self.readShutter(path)[0]
 
         os.mkdir(os.path.join(path, "overlapCorrected"))
-        f = open(os.path.join(path, "overlapCorrected/TOFData.csv"), "wb")
+        self.f = open(os.path.join(path, "overlapCorrected", "TOFData.csv"), "wb")
         #zipped = zip(self.sampleFits.arrays, self.sampleFits.headers, self.sampleFits.names)
         s = 0
         for subIndex in shutterIndices:
@@ -256,20 +256,22 @@ class OverlapCorrectionAndScaling:
                 runningTot += self.directory.sampleFits.arrays[i]
                 self.directory.sampleFits.arrays[i] = np.round(
                     np.divide(self.directory.sampleFits.arrays[i], (1 - prob))).astype(np.int16)
-                hdu = fits.PrimaryHDU()
-                hdu.data = self.directory.sampleFits.arrays[i]
-                counts = sum(sum(self.directory.sampleFits.arrays[i]))
-                hdu.header = self.directory.sampleFits.headers[i]
-                hdu.header["N_COUNTS"] = counts
-                TOF = hdu.header["TOF"]
-                line = "%.16f, %d\n" % (TOF, counts)
-                f.writelines(line)
+                self.writeToFolder(
+                    self.directory.sampleFits.arrays[i], self.directory.sampleFits.headers[i], self.directory.sampleFits.names[i], path, "overlapCorrected", "corrected")
+                #hdu = fits.PrimaryHDU()
+                #hdu.data = self.directory.sampleFits.arrays[i]
+                #counts = sum(sum(self.directory.sampleFits.arrays[i]))
+                #hdu.header = self.directory.sampleFits.headers[i]
+                #hdu.header["N_COUNTS"] = counts
+                #TOF = hdu.header["TOF"]
+                #line = "%.16f, %d\n" % (TOF, counts)
+                #f.writelines(line)
 
-                hdu.writeto(os.path.join(path, "overlapCorrected/corrected", self.directory.sampleFits.names[i]))
+                #hdu.writeto(os.path.join(path, "overlapCorrected/corrected", self.directory.sampleFits.names[i]))
                 print i
             print s
             s += 1
-        f.close()
+        self.f.close()
         print self.directory.sampleFits.arrays[100]
 
     def overlapCorrectionScaling(self, path):
@@ -284,7 +286,7 @@ class OverlapCorrectionAndScaling:
             ratio.append(float(svs[1]) / float(svo[1]))
 
         os.mkdir(os.path.join(path, "scaledOpenBeam"))
-        f = open(os.path.join(path, "scaledOpenBeam/TOFData.csv"), "wb")
+        self.f = open(os.path.join(path, "scaledOpenBeam", "TOFData.csv"), "wb")
         # zipped = zip(self.openFits.arrays, self.openFits.headers, self.openFits.names)
         s = 0
 
@@ -297,24 +299,38 @@ class OverlapCorrectionAndScaling:
                 shutter = float(shutterValuesOpen[s][1])
                 prob = np.divide(runningTot, shutter)
                 runningTot += self.directory.openFits.arrays[i]
-                self.directory.openFits.arrays[i] = np.round((np.divide(self.directory.openFits.arrays[i], (1 - prob))) * scaleFactor).astype(np.int16)
-                    
-                hdu = fits.PrimaryHDU()
-                hdu.data = self.directory.openFits.arrays[i]
-                counts = sum(sum(self.directory.openFits.arrays[i]))
-                hdu.header = self.directory.openFits.headers[i]
-                hdu.header["N_COUNTS"] = counts
-                TOF = hdu.header["TOF"]
+                self.directory.openFits.arrays[i] = np.round(
+                    (np.divide(self.directory.openFits.arrays[i], (1 - prob))) * scaleFactor).astype(np.int16)
+                self.writeToFolder(
+                    self.directory.openFits.arrays[i], self.directory.openFits.headers[i], self.directory.openFits.names[i], path, "scaledOpenBeam", "scaled")
+                #hdu = fits.PrimaryHDU()
+                #hdu.data = self.directory.openFits.arrays[i]
+                #counts = sum(sum(self.directory.openFits.arrays[i]))
+                #hdu.header = self.directory.openFits.headers[i]
+                #hdu.header["N_COUNTS"] = counts
+                #TOF = hdu.header["TOF"]
 
-                line = "%.16f, %d\n" % (TOF, counts)
-                f.writelines(line)
+                #line = "%.16f, %d\n" % (TOF, counts)
+                #f.writelines(line)
 
-                hdu.writeto(os.path.join(path, "scaledOpenBeam", "scaled", self.directory.sampleFits.names[i]))
+                #hdu.writeto(os.path.join(path, "scaledOpenBeam", "scaled", self.directory.sampleFits.names[i]))
                 print i
             print s
             s += 1
-        f.close()
+        self.f.close()
         print self.directory.openFits.arrays[100]
+
+    def writeToFolder(self, array, header, name, path, mod1, mod2):
+
+        hdu = fits.PrimaryHDU()
+        hdu.data = array
+        counts = sum(sum(array))
+        hdu.header = header
+        hdu.header["N_COUNTS"] = counts
+        TOF = hdu.header["TOF"]
+        line = "%.16f, %d\n" % (TOF, counts)
+        self.f.writelines(line)
+        hdu.writeto(os.path.join(path, mod1, mod2 + name))
 
     def doBoth(self):
         try:
