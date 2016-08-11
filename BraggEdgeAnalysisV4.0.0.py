@@ -331,7 +331,8 @@ class OverlapCorrectionAndScaling:
             self.overlapCorrectionScaling(self.directory.openPath)
         except TypeError:
             return ctypes.windll.user32.MessageBoxA(0, "You need to select some data", "Error", 1)
-    
+
+
 class ShowData:
 
     def __init__(self, root, directory):
@@ -424,16 +425,13 @@ class TransPlot:
     def __init__(self, directory, val):
 
         self.directory = directory
-        try:
-            self.val = val.get()
-            if self.val == "Default flight path: 56m":
-                self.L = float(self.val.split(':')[1].strip('m'))
+        self.val = val.get()
+        if self.val == "Default flight path: 56m":
+            self.L = float(self.val.split(':')[1].strip('m'))
 
-            else:
-                self.L = float(self.val.strip('m'))
+        else:
+            self.L = float(self.val.strip('m'))
 
-        except NameError:
-            return ctypes.windll.user32.MessageBoxA(0, "You must select an ROI first", "Error", 1)
 
         global transW
         transW = []
@@ -474,6 +472,7 @@ class TransPlot:
 
     def plotTransTOF(self):
 
+        plt.cla()
         xyData = self.produceTransData()
         global transT
         transT = xyData[1]
@@ -489,7 +488,7 @@ class TransPlot:
         self.myrectsel = MyRectangleSelector(
             self.ax, self.onSelect, drawtype='box', rectprops=dict(
                 facecolor='red', edgecolor='black', alpha=0.5, fill=True))
-        plt.cla()
+
         plt.plot(xyData[0], xyData[1])
         plt.ylim(ymin, ymax)
         plt.xlabel("Time of Flight (s)")
@@ -501,6 +500,7 @@ class TransPlot:
 
     def plotTransWavelength(self):
 
+        plt.cla()
         xyData = self.produceTransData()
         global transW
         transW = xyData[1]
@@ -516,7 +516,7 @@ class TransPlot:
         self.myrectsel = MyRectangleSelector(
             self.ax, self.onSelect, drawtype='box', rectprops=dict(
                 facecolor='red', edgecolor='black', alpha=0.5, fill=True))
-        plt.cla()
+
         plt.plot(wavelength, xyData[1])
         plt.xlabel(u"Wavelength (\u00C5)")
         plt.ylabel("Neutron Transmission")
