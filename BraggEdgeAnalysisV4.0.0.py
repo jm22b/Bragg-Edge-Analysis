@@ -589,12 +589,16 @@ class TransPlot:
 
         self.plots = [(TOF, avg), (wavelength, avg)]
         self.fig = plt.figure()
-        self.fig.canvas.mpl_connect("key_press_event", self.key_event)
+        self.fig.canvas.mpl_connect("key_press_event", self.key_event_ZAxis)
         self.ax = self.fig.add_subplot(111)
         self.ax.plot(TOF, avg)
+
+        self.xlabels = ["TOF (s)", u"Wavelength (\u00C5)"]
+        self.ax.set_xlabel(self.xlabels[0])
+        self.ax.set_ylabel("Average Number of Counts")
         plt.show()
 
-    def key_event(self, e):
+    def key_event_ZAxis(self, e):
 
         if e.key == "right":
             self.curr_pos += 1
@@ -605,6 +609,8 @@ class TransPlot:
         self.curr_pos %= len(self.plots)
         self.ax.cla()
         self.ax.plot(self.plots[self.curr_pos][0], self.plots[self.curr_pos][1])
+        self.ax.set_xlabel(self.xlabels[self.curr_pos])
+        self.ax.set_ylabel("Average Number of Counts")
         self.fig.canvas.draw()
 
     def onSelect(self, eclick, erelease):
