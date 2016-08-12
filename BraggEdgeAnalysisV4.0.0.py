@@ -730,7 +730,7 @@ class EdgeFitting:
 
         if wavelength == []:
 
-            zipped = zip(timeOF, transT)
+            zipped = zip(TimeOfFlight, Transmitted)
             for xval, yval in zipped:
                 if xval >= atp and xval <= btp:
                     self.subx.append(xval)
@@ -739,7 +739,7 @@ class EdgeFitting:
 
         else:
 
-            zipped = zip(wavelength, transW)
+            zipped = zip(wavelength, Transmitted)
             for xval, yval in zipped:
                 if xval >= atp and xval <= btp:
                     self.subx.append(xval)
