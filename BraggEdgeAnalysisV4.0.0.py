@@ -6,6 +6,7 @@ import ctypes
 import scipy.special
 import warnings
 import matplotlib
+
 matplotlib.use("TkAgg")
 from matplotlib import pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2TkAgg  # Note: add toolbar
@@ -17,9 +18,7 @@ from astropy.io import fits
 
 
 class BraggEdgeAnalysisGUI:
-
     def __init__(self, root_):
-
         self.root = root_
         self.frame = tk.Frame(self.root)
         self.frame.pack()
@@ -41,7 +40,6 @@ class BraggEdgeAnalysisGUI:
         self.widgets()
 
     def widgets(self):
-
         root.option_add("*tearoff", "FALSE")
         # populates top level menus and maps the commands to them
         self.filemenu.add_command(
@@ -63,7 +61,7 @@ class BraggEdgeAnalysisGUI:
             label="Plot (TOF)", command=lambda: TransPlot(self.directory, self.flightpath).plotTransTOF())
         self.transplot.add_separator()
         self.transplot.add_command(
-            label="Plot (Wavelength)", command=lambda: TransPlot(self.directory, self.flightpath).plotTransWavelength())
+            label="Plot (Wavelength)", command=lambda: TransPlot(self.directory, self.flightpath).combinedTransPlot())
         self.actionmenu.add_separator()
         self.actionmenu.add_command(label="Fit Bragg Edge", command=lambda: EdgeFitting().subPlot())
         self.actionmenu.add_separator()
@@ -76,11 +74,10 @@ class BraggEdgeAnalysisGUI:
         self.flightpath.insert(0, "Default flight path: 56m")
         self.flightpath.pack()
         self.showDataButton.pack()
-        #self.contrastButton.pack()
+        # self.contrastButton.pack()
 
 
 class FitsData:
-
     """This class acts as a data model for the open beam and sample data.
     creating an instance of it will produce a blank template to be filled with the relevant data
     by the loading functions
@@ -98,10 +95,9 @@ class FitsData:
         self.names = names
         self.headers = headers
         self.arrays = arrays
-        
+
 
 class DirectoryHandler:
-
     # holds the methods for opening file dialogs and finding path variables
 
     def __init__(self):
@@ -118,42 +114,37 @@ class DirectoryHandler:
 
 
 class GetDirectories:
-
     def __init__(self):
-
         self.directory = DirectoryHandler()
         self.openFits = FitsData()
         self.sampleFits = FitsData()
-        
+
         self.openPath = None
         self.samplePath = None
 
     def getOpenPath(self):
-
         """if scaled data exists, load it. Otherwise load original data"""
-        
+
         self.directory.openOpenDirectory()
         self.openPath = self.directory.openPath
-        #if os.path.exists(os.path.join(self.directory.openPath, "16-bit-scaledOpenBeam")):
-            #path = os.path.join(self.directory.openPath, "16-bit-scaledOpenBeam")
+        # if os.path.exists(os.path.join(self.directory.openPath, "16-bit-scaledOpenBeam")):
+        # path = os.path.join(self.directory.openPath, "16-bit-scaledOpenBeam")
         self.loadData(self.directory.openPath, self.openFits)
-        #else:
-            #self.loadData(self.directory.openPath, self.openFits)
-        
-    def getSamplePath(self):
+        # else:
+        # self.loadData(self.directory.openPath, self.openFits)
 
+    def getSamplePath(self):
         """if overlap corrected data exists, load it. otherwise load the original data"""
 
         self.directory.openSampleDirectory()
         self.samplePath = self.directory.samplePath
-        #if os.path.exists(os.path.join(self.directory.samplePath, "16-bit-overlapCorrected")):
-            #path = os.path.join(self.directory.samplePath, "16-bit-overlapCorrected")
+        # if os.path.exists(os.path.join(self.directory.samplePath, "16-bit-overlapCorrected")):
+        # path = os.path.join(self.directory.samplePath, "16-bit-overlapCorrected")
         self.loadData(self.directory.samplePath, self.sampleFits)
-        #else:
-            #self.loadData(self.directory.samplePath, self.sampleFits)
+        # else:
+        # self.loadData(self.directory.samplePath, self.sampleFits)
 
     def loadData(self, path, container):
-
         """handles the loading of the data, filling up the 'container' (FitsData() instance)
         behaves identically for both open beam and sample data"""
 
@@ -169,9 +160,8 @@ class GetDirectories:
             container.arrays.append(data)
             print name  # debugging
 
-            
-class OverlapCorrectionAndScaling:
 
+class OverlapCorrectionAndScaling:
     """deals with overlap correction and scaling of the selected data. Needs refactoring and the reasoning about
     what these functions will do needs pushing up towards the GUI."""
 
@@ -249,17 +239,16 @@ class OverlapCorrectionAndScaling:
         shutterIndices = self.preBinData(path)
         shutterValues = self.readShutter(path)[0]
 
-
         if bits == np.int16:
             os.mkdir(os.path.join(path, "16-bit-overlapCorrected"))
             self.f = open(os.path.join(path, "16-bit-overlapCorrected", "TOFData.csv"), "wb")
-        #zipped = zip(self.sampleFits.arrays, self.sampleFits.headers, self.sampleFits.names)
+            # zipped = zip(self.sampleFits.arrays, self.sampleFits.headers, self.sampleFits.names)
             s = 0
             for subIndex in shutterIndices:
-                #subList = zipped[subIndex[0]:subIndex[-1]+1]
+                # subList = zipped[subIndex[0]:subIndex[-1]+1]
                 runningTot = np.zeros((512, 512))
 
-                for i in range(subIndex[0], subIndex[0]+len(subIndex)):
+                for i in range(subIndex[0], subIndex[0] + len(subIndex)):
                     shutter = float(shutterValues[s][1])
                     prob = np.divide(runningTot, shutter)
                     runningTot += self.directory.sampleFits.arrays[i]
@@ -277,7 +266,7 @@ class OverlapCorrectionAndScaling:
             s = 0
             for subIndex in shutterIndices:
                 runningTot = np.zeros((512, 512))
-                for i in range(subIndex[0], subIndex[0]+len(subIndex)):
+                for i in range(subIndex[0], subIndex[0] + len(subIndex)):
                     shutter = float(shutterValues[s][1])
                     prob = np.divide(runningTot, shutter)
                     runningTot += self.directory.sampleFits.arrays[i]
@@ -307,7 +296,7 @@ class OverlapCorrectionAndScaling:
         if bits == np.int16:
             os.mkdir(os.path.join(path, "16-bit-scaledOpenBeam"))
             self.f = open(os.path.join(path, "16-bit-scaledOpenBeam", "TOFData.csv"), "wb")
-            #fmod = str(bits).split('.')[-1][0:-2]
+            # fmod = str(bits).split('.')[-1][0:-2]
             s = 0
             for subIndex in shutterIndices:
                 # sublist = zipped[subIndex[0]:subIndex[-1]+1]
@@ -330,8 +319,8 @@ class OverlapCorrectionAndScaling:
         else:
             os.mkdir(os.path.join(path, "32-bit-scaledOpenBeam"))
             self.f = open(os.path.join(path, "32-bit-scaledOpenBeam", "TOFData.csv"), "wb")
-            #fmod = str(bits).split('.')[-1][0:-2]
-        # zipped = zip(self.openFits.arrays, self.openFits.headers, self.openFits.names)
+            # fmod = str(bits).split('.')[-1][0:-2]
+            # zipped = zip(self.openFits.arrays, self.openFits.headers, self.openFits.names)
             s = 0
 
             for subIndex in shutterIndices:
@@ -339,7 +328,7 @@ class OverlapCorrectionAndScaling:
                 runningTot = np.zeros((512, 512))
                 scaleFactor = ratio[s]
 
-                for i in range(subIndex[0], subIndex[0]+len(subIndex)):
+                for i in range(subIndex[0], subIndex[0] + len(subIndex)):
                     shutter = float(shutterValuesOpen[s][1])
                     prob = np.divide(runningTot, shutter)
                     runningTot += self.directory.openFits.arrays[i]
@@ -369,11 +358,11 @@ class OverlapCorrectionAndScaling:
     def doBoth(self, bits):
         try:
             fmod = str(bits).split('.')[-1][0:-2][-2:] + "-bit-"
-            if not os.path.exists(os.path.join(self.directory.samplePath, fmod+"overlapCorrected")):
+            if not os.path.exists(os.path.join(self.directory.samplePath, fmod + "overlapCorrected")):
                 self.overlapCorrection(self.directory.samplePath, bits)
             else:
                 ctypes.windll.user32.MessageBoxA(0, "Corrected files already exist.", "Error", 1)
-            if not os.path.exists(os.path.join(self.directory.openPath, fmod+"scaledOpenBeam")):
+            if not os.path.exists(os.path.join(self.directory.openPath, fmod + "scaledOpenBeam")):
                 self.overlapCorrectionScaling(self.directory.openPath, bits)
             else:
                 ctypes.windll.user32.MessageBoxA(0, "Scaled and corrected files already exist.", "Error", 1)
@@ -382,9 +371,7 @@ class OverlapCorrectionAndScaling:
 
 
 class ShowData:
-
     def __init__(self, root, directory):
-        
         self.root = root
         self.directory = directory
 
@@ -421,12 +408,11 @@ class ShowData:
         return a, b, c, d
 
     def plot(self):
-
         self.plotted = True
 
         self.s = 0
-        #im = self.directory.sampleFits.arrays[self.s]
-        #self.l = self.ax.imshow(im, cmap=plt.cm.gray, interpolation="nearest", vmin=0, vmax=int(self.vmax.get()))
+        # im = self.directory.sampleFits.arrays[self.s]
+        # self.l = self.ax.imshow(im, cmap=plt.cm.gray, interpolation="nearest", vmin=0, vmax=int(self.vmax.get()))
         self.canvas = FigureCanvasTkAgg(self.fig, self.root)
         self.canvas.get_tk_widget().pack()
         self.canvas.draw()
@@ -438,8 +424,8 @@ class ShowData:
         if self.plotted:
             im = self.directory.sampleFits.arrays[ind]
             self.l = self.ax.imshow(im, cmap=plt.cm.gray, interpolation="nearest", vmin=0, vmax=int(self.vmax.get()))
-            #self.l.set_data(im)
-            #print self.directory.sampleFits.arrays[ind]
+            # self.l.set_data(im)
+            # print self.directory.sampleFits.arrays[ind]
             self.canvas.draw()
 
     def histeq(self, im, nbr_bins=256):
@@ -459,9 +445,8 @@ class ShowData:
         self.l.set_data(im)
         self.canvas.draw()
 
-    
-class MyRectangleSelector(RectangleSelector):
 
+class MyRectangleSelector(RectangleSelector):
     def release(self, event):
         super(MyRectangleSelector, self).release(event)
         self.to_draw.set_visible(True)
@@ -469,7 +454,6 @@ class MyRectangleSelector(RectangleSelector):
 
 
 class TransPlot:
-
     def __init__(self, directory, val):
 
         self.directory = directory
@@ -481,6 +465,7 @@ class TransPlot:
             self.L = float(self.val.strip('m'))
 
         self.curr_pos = 0
+        self.currT_pos = 0
 
         global transW
         transW = []
@@ -502,7 +487,7 @@ class TransPlot:
         transmitted = []
         zipped = zip(sampleIntensities, scaledIntensities)
         for sample, scaled in zipped:
-            transmitted.append(float(sample)/float(scaled))
+            transmitted.append(float(sample) / float(scaled))
 
         TOF = []
         for header in self.directory.sampleFits.headers:
@@ -511,13 +496,48 @@ class TransPlot:
         return TOF, transmitted
 
     def convertToWavelength(self, data):
-        wavelength = []
+        convertedwavelength = []
         h = 6.6E-34
         m = 1.67E-27
-        A = 10**10
+        A = 10 ** 10
         for point in data:
-            wavelength.append(((h*float(point))/(self.L*m))*A)
-        return wavelength
+            convertedwavelength.append(((h * float(point)) / (self.L * m)) * A)
+        return convertedwavelength
+    
+    def combinedTransPlot(self):
+        
+        XYData = self.produceTransData()
+        global Transmitted
+        Transmitted = XYData[1]
+        global TimeOfFlight
+        TimeOfFlight = XYData[0]
+        global wavelength
+        wavelength = self.convertToWavelength(TimeOfFlight)
+        
+        self.TransPlots = [(TimeOfFlight, Transmitted),(wavelength, Transmitted)]
+        self.fig2 = plt.figure(2)
+        self.fig2.canvas.mpl_connect("key_press_event", self.key_event_Transmission)
+        self.ax2 = self.fig2.add_subplot(111)
+        self.ax2.plot(TimeOfFlight, Transmitted)
+        self.xTlabels = ["TOF (s)", u"Wavelength (\u00C5)"]
+        self.ax2.set_xlabel(self.xTlabels[0])
+        self.ax2.set_ylabel("Neutron Transmission")
+        plt.show()
+        
+    def key_event_Transmission(self, e):
+        
+        if e.key == "right":
+            self.currT_pos += 1
+        elif e.key == "left":
+            self.currT_pos -= 1
+        else:
+            return
+        self.currT_pos %= len(self.TransPlots)
+        self.ax2.cla()
+        self.ax2.plot(self.TransPlots[self.currT_pos][0], self.TransPlots[self.currT_pos][1])
+        self.ax2.set_xlabel(self.xTlabels[self.currT_pos])
+        self.ax2.set_ylabel("Neutron Transmission")
+        self.fig2.canvas.draw()
 
     def plotTransTOF(self):
 
@@ -576,21 +596,22 @@ class TransPlot:
 
     def ZAxisProfile(self):
 
-
         TOF = []
         for header in self.directory.sampleFits.headers:
             TOF.append(header['TOF'])
+        print len(TOF)
 
-        wavelength = self.convertToWavelength(TOF)
+        wavelengthZ = self.convertToWavelength(TOF)
+        print len(wavelengthZ)
 
         avg = []
         for data in self.directory.sampleFits.arrays:
             avg.append(np.mean(data[c:d, a:b]))
 
-        self.plots = [(TOF, avg), (wavelength, avg)]
-        self.fig = plt.figure()
-        self.fig.canvas.mpl_connect("key_press_event", self.key_event_ZAxis)
-        self.ax = self.fig.add_subplot(111)
+        self.plots = [(TOF, avg), (wavelengthZ, avg)]
+        self.fig1 = plt.figure(1)
+        self.fig1.canvas.mpl_connect("key_press_event", self.key_event_ZAxis)
+        self.ax = self.fig1.add_subplot(111)
         self.ax.plot(TOF, avg)
 
         self.xlabels = ["TOF (s)", u"Wavelength (\u00C5)"]
@@ -611,7 +632,7 @@ class TransPlot:
         self.ax.plot(self.plots[self.curr_pos][0], self.plots[self.curr_pos][1])
         self.ax.set_xlabel(self.xlabels[self.curr_pos])
         self.ax.set_ylabel("Average Number of Counts")
-        self.fig.canvas.draw()
+        self.fig1.canvas.draw()
 
     def onSelect(self, eclick, erelease):
         print "Start position: (%f, %f)" % (eclick.xdata, eclick.ydata)
@@ -628,7 +649,6 @@ class TransPlot:
 
 
 class EdgeFitting:
-
     def __init__(self):
 
         # self.xvalsW = wavelength
@@ -754,7 +774,7 @@ class EdgeFitting:
 
 if __name__ == "__main__":
     root = tk.Tk()
-    #root.geometry("600x700")
+    # root.geometry("600x700")
     root.title("Bragg Edge Analysis")
     app = BraggEdgeAnalysisGUI(root)
     root.mainloop()
