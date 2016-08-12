@@ -56,17 +56,18 @@ class BraggEdgeAnalysisGUI:
         self.bits.add_separator()
         self.bits.add_command(label="32 Bit Float Data", command=lambda: self.correction.doBoth(np.float32))
         self.actionmenu.add_separator()
-        self.actionmenu.add_cascade(label="Transmission", menu=self.transplot)
+        self.actionmenu.add_cascade(label="Plotting", menu=self.transplot)
         self.transplot.add_command(
-            label="Plot (TOF)", command=lambda: TransPlot(self.directory, self.flightpath).plotTransTOF())
+            label="Transmission Plots", command=lambda: TransPlot(self.directory, self.flightpath).combinedTransPlot())
         self.transplot.add_separator()
-        self.transplot.add_command(
-            label="Plot (Wavelength)", command=lambda: TransPlot(self.directory, self.flightpath).combinedTransPlot())
+        self.transplot.add_command(label="Z-Axis Profile", command=lambda: TransPlot(self.directory, self.flightpath).ZAxisProfile())
+        #self.transplot.add_command(
+            #label="Plot (Wavelength)", command=lambda: TransPlot(self.directory, self.flightpath).combinedTransPlot())
         self.actionmenu.add_separator()
         self.actionmenu.add_command(label="Fit Bragg Edge", command=lambda: EdgeFitting().subPlot())
-        self.actionmenu.add_separator()
-        self.actionmenu.add_command(
-            label="Z-axis Profile", command=lambda: TransPlot(self.directory, self.flightpath).ZAxisProfile())
+        #self.actionmenu.add_separator()
+        #self.actionmenu.add_command(
+            #label="Z-axis Profile", command=lambda: TransPlot(self.directory, self.flightpath).ZAxisProfile())
         self.menubar.add_cascade(label="Actions", menu=self.actionmenu)
 
         root.config(menu=self.menubar)
