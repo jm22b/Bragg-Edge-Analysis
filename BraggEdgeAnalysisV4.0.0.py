@@ -451,6 +451,7 @@ class MyRectangleSelector(RectangleSelector):
         super(MyRectangleSelector, self).release(event)
         self.to_draw.set_visible(True)
         self.canvas.draw()
+        
 
 
 class TransPlot:
@@ -505,7 +506,6 @@ class TransPlot:
         return convertedwavelength
     
     def combinedTransPlot(self):
-        
         XYData = self.produceTransData()
         global Transmitted
         Transmitted = XYData[1]
@@ -516,13 +516,18 @@ class TransPlot:
         
         self.TransPlots = [(TimeOfFlight, Transmitted),(wavelength, Transmitted)]
         self.fig2 = plt.figure(2)
-        self.fig2.canvas.mpl_connect("key_press_event", self.key_event_Transmission)
+        
         self.ax2 = self.fig2.add_subplot(111)
+        self.fig2.canvas.mpl_connect("Rectangle Select", MyRectangleSelector(
+            self.ax2, self.onSelect, drawtype='box', rectprops=dict(
+                facecolor='red', edgecolor='black', alpha=0.5, fill=True)))
+        self.fig2.canvas.mpl_connect("key_press_event", self.key_event_Transmission)
         self.ax2.plot(TimeOfFlight, Transmitted)
         self.xTlabels = ["TOF (s)", u"Wavelength (\u00C5)"]
         self.ax2.set_xlabel(self.xTlabels[0])
         self.ax2.set_ylabel("Neutron Transmission")
         plt.show()
+        return Transmitted, TimeOfFLight, wavelength
         
     def key_event_Transmission(self, e):
         
@@ -537,8 +542,12 @@ class TransPlot:
         self.ax2.plot(self.TransPlots[self.currT_pos][0], self.TransPlots[self.currT_pos][1])
         self.ax2.set_xlabel(self.xTlabels[self.currT_pos])
         self.ax2.set_ylabel("Neutron Transmission")
+        self.myrectsel = MyRectangleSelector(
+            self.ax2, self.onSelect, drawtype='box', rectprops=dict(
+                facecolor='red', edgecolor='black', alpha=0.5, fill=True))
         self.fig2.canvas.draw()
 
+    """
     def plotTransTOF(self):
 
         plt.cla()
@@ -566,7 +575,8 @@ class TransPlot:
         plt.close()
 
         return timeOF, transT
-
+    """
+    """
     def plotTransWavelength(self):
 
         plt.cla()
@@ -593,6 +603,7 @@ class TransPlot:
         plt.show()
         plt.close()
         return wavelength, transW
+    """
 
     def ZAxisProfile(self):
 
@@ -635,6 +646,7 @@ class TransPlot:
         self.fig1.canvas.draw()
 
     def onSelect(self, eclick, erelease):
+        
         print "Start position: (%f, %f)" % (eclick.xdata, eclick.ydata)
         print "End position: (%f, %f)" % (erelease.xdata, erelease.ydata)
         global atp
