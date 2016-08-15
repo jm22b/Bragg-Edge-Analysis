@@ -834,6 +834,14 @@ class EdgeFitting:
             dydx = dy/dx
             edgeIndex = np.argmax(dydx)
             self.lambda0var.insert(0, self.subx[edgeIndex])
+            edgeheight = np.median(arry[0:edgeIndex])
+            self.coeff2.insert(0, edgeheight)
+            #f = open("datasample.csv", "wb")
+            #zipped = zip(self.subx, self.suby)
+            #for x,y in zipped:
+                #line = "%f,%f\n" % (x,y)
+                #f.writelines(line)
+            #f.close()
 
         else:
 
@@ -851,6 +859,14 @@ class EdgeFitting:
             dydx = dy/dx
             edgeIndex = np.argmax(dydx)
             self.lambda0var.insert(0, self.subx[edgeIndex])
+            edgeheight = np.median(arry[0:edgeIndex])
+            self.coeff2.insert(0, edgeheight)
+            #f = open("datasample.csv", "wb")
+            #zipped = zip(self.subx, self.suby)
+            #for x,y in zipped:
+                #line = "%f,%f\n" % (x,y)
+                #f.writelines(line)
+            #f.close()
 
     def fitCurve(self):
 
