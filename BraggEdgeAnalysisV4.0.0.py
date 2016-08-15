@@ -71,7 +71,7 @@ class BraggEdgeAnalysisGUI:
             #label="Z-axis Profile", command=lambda: TransPlot(self.directory, self.flightpath).ZAxisProfile())
         self.menubar.add_cascade(label="Actions", menu=self.actionmenu)
 
-        self.results.add_command(label="Results", command=lambda: ResultsTable())
+        self.results.add_command(label="Results", command=lambda: ResultsTable().populateTable)
         self.menubar.add_cascade(label="Results", menu=self.results)
 
         root.config(menu=self.menubar)
@@ -711,6 +711,14 @@ class ResultsTable:
         self.scrollbar = tk.Scrollbar(self.textFrame, command = self.textwidget.yview)
         self.scrollbar.grid(row=0, column=1, sticky="nsew")
         self.textwidget['yscrollcommand'] = self.scrollbar.set
+
+    def populateTable(self):
+
+        zipped = zip(TimeOfFlight, wavelength, Transmitted)
+        #results = []
+        for x,y,z in zipped:
+            xyzstr = "%f\t%f\t%f" % (x,y,z)
+            self.textwidget.insert(-1, xyzstr)
 
 
 class EdgeFitting:
