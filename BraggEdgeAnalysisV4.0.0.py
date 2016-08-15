@@ -6,6 +6,7 @@ import ctypes
 import scipy.special
 import warnings
 import matplotlib
+import csv
 # this backend must be used
 matplotlib.use("TkAgg")
 from matplotlib import pyplot as plt
@@ -13,7 +14,7 @@ from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolb
 from matplotlib.figure import Figure
 from matplotlib.widgets import Slider, RectangleSelector
 from scipy.optimize import curve_fit, OptimizeWarning
-from tkFileDialog import askdirectory
+from tkFileDialog import askdirectory, asksaveasfilename
 from astropy.io import fits
 
 # Main page of the GUI
@@ -728,7 +729,15 @@ class ResultsTable:
         self.frame.config(menu=self.menubar)
         
     def save(self):
-        pass
+        
+        name = asksaveasfilename()
+        print name
+        if name == None:
+            return
+        contents = self.textwidget.get("1.0", "end-1c")
+        f = open(name, "wb")
+        f.writelines(contents)
+        f.close()
         
     def populateTable(self):
 
@@ -736,7 +745,6 @@ class ResultsTable:
         #results = []
         for x,y,z in zipped:
             xyzstr = "%f\t%f\t%f\n" % (x,y,z)
-            print xyzstr
             self.textwidget.insert(tk.END, xyzstr)
 
 
