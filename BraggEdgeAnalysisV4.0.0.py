@@ -6,7 +6,7 @@ import ctypes
 import scipy.special
 import warnings
 import matplotlib
-
+# this backend must be used
 matplotlib.use("TkAgg")
 from matplotlib import pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2TkAgg  # Note: add toolbar
@@ -16,21 +16,21 @@ from scipy.optimize import curve_fit, OptimizeWarning
 from tkFileDialog import askdirectory
 from astropy.io import fits
 
-
+# Main page of the GUI
 class BraggEdgeAnalysisGUI:
     def __init__(self, root_):
         self.root = root_
         self.frame = tk.Frame(self.root)
-        self.frame.pack()
+        self.frame.pack() #pack is used to manage the position of widgets
 
         self.directory = GetDirectories()  # instantiate the class here to be passed to other classes, avoids multiples
-        self.correction = OverlapCorrectionAndScaling(self.directory)
+        self.correction = OverlapCorrectionAndScaling(self.directory) # instance of overlapcorrection takes the aforemention instance of self.directory so that it has access
 
         self.menubar = tk.Menu(self.root)  # creates top level menus to be populated in widgets()
-        self.filemenu = tk.Menu(self.menubar, tearoff=0)
-        self.actionmenu = tk.Menu(self.menubar, tearoff=0)
-        self.transplot = tk.Menu(self.menubar)
-        self.bits = tk.Menu(self.menubar, tearoff=0)
+        self.filemenu = tk.Menu(self.menubar, tearoff=0) # add a file menu
+        self.actionmenu = tk.Menu(self.menubar, tearoff=0) # add an action menu
+        self.transplot = tk.Menu(self.menubar) # add a sub menu for plotting functions
+        self.bits = tk.Menu(self.menubar, tearoff=0) # sub menu for choosing 16/32 bit options
         # button for showing the sample images
         self.showDataButton = tk.Button(
             self.frame, text="Show Sample", width=10, command=lambda: ShowData(self.root, self.directory).plot())
@@ -80,8 +80,8 @@ class BraggEdgeAnalysisGUI:
 
 class FitsData:
     """This class acts as a data model for the open beam and sample data.
-    creating an instance of it will produce a blank template to be filled with the relevant data
-    by the loading functions
+    creating an instance of it will produce a blank template to be filled with the
+    relevant data by the loading functions
     """
 
     def __init__(self, names=None, headers=None, arrays=None):
@@ -106,7 +106,7 @@ class DirectoryHandler:
         self.samplePath = None
 
     def openOpenDirectory(self):
-        self.openPath = askdirectory()
+        self.openPath = askdirectory() # tk file dialog
         return self.openPath
 
     def openSampleDirectory(self):
@@ -117,7 +117,7 @@ class DirectoryHandler:
 class GetDirectories:
     def __init__(self):
         self.directory = DirectoryHandler()
-        self.openFits = FitsData()
+        self.openFits = FitsData() # instances of the FitsData() class are blank templates to be filled
         self.sampleFits = FitsData()
 
         self.openPath = None
@@ -128,22 +128,14 @@ class GetDirectories:
 
         self.directory.openOpenDirectory()
         self.openPath = self.directory.openPath
-        # if os.path.exists(os.path.join(self.directory.openPath, "16-bit-scaledOpenBeam")):
-        # path = os.path.join(self.directory.openPath, "16-bit-scaledOpenBeam")
-        self.loadData(self.directory.openPath, self.openFits)
-        # else:
-        # self.loadData(self.directory.openPath, self.openFits)
+        self.loadData(self.directory.openPath, self.openFits) # load data handles the logic of what to load from where
 
     def getSamplePath(self):
         """if overlap corrected data exists, load it. otherwise load the original data"""
 
         self.directory.openSampleDirectory()
         self.samplePath = self.directory.samplePath
-        # if os.path.exists(os.path.join(self.directory.samplePath, "16-bit-overlapCorrected")):
-        # path = os.path.join(self.directory.samplePath, "16-bit-overlapCorrected")
-        self.loadData(self.directory.samplePath, self.sampleFits)
-        # else:
-        # self.loadData(self.directory.samplePath, self.sampleFits)
+        self.loadData(self.directory.samplePath, self.sampleFits) # the same load data function is called
 
     def loadData(self, path, container):
         """handles the loading of the data, filling up the 'container' (FitsData() instance)
@@ -152,11 +144,11 @@ class GetDirectories:
         f = glob.glob(os.path.join(path, "*[0-9][0-9][0-9][0-9][0-9].fits"))  # relies on 5-digit numbering of files
         for fitsFile in f:
             hdulist = fits.open(fitsFile, memmap=False)  # memmap tries to keep things open after closing them
-            name = hdulist.filename().split("\\")[-1]
-            header = hdulist[0].header
-            data = hdulist[0].data
-            hdulist.close()
-            container.names.append(name)  # populate container
+            name = hdulist.filename().split("\\")[-1] # does soom foo to extract filename
+            header = hdulist[0].header # accesses header object
+            data = hdulist[0].data # accesses data object
+            hdulist.close() # close the file
+            container.names.append(name)  # populate container with name, header, data
             container.headers.append(header)
             container.arrays.append(data)
             print name  # debugging
@@ -202,6 +194,11 @@ class OverlapCorrectionAndScaling:
         return countData, timeData, spectraData
 
     def preBinData(self, path):
+
+        """
+        This function is responsible for determining the indices of the files that
+        belong to each shutter
+        """
 
         shutterData = self.readShutter(path)  # calls the read shutter function
         shutterTimes = []
@@ -346,19 +343,29 @@ class OverlapCorrectionAndScaling:
 
     def writeToFolder(self, array, header, name, path, mod1, mod2):
 
-        hdu = fits.PrimaryHDU()
-        hdu.data = array
-        counts = sum(sum(array))
-        hdu.header = header
-        hdu.header["N_COUNTS"] = counts
-        TOF = hdu.header["TOF"]
-        line = "%.16f, %d\n" % (TOF, counts)
-        self.f.writelines(line)
-        hdu.writeto(os.path.join(path, mod1, mod2 + name))
+        """
+        generic function for saving the data once it has been corrected/scaled
+        """
+
+        hdu = fits.PrimaryHDU() # create fits file
+        hdu.data = array # populate file with data
+        counts = sum(sum(array)) # get new number of counts
+        hdu.header = header # copy over old headers
+        hdu.header["N_COUNTS"] = counts # update with new number of counts
+        TOF = hdu.header["TOF"] # extract TOF
+        line = "%.16f, %d\n" % (TOF, counts) # line to be written to .csv file
+        self.f.writelines(line) # write line to.csv
+        hdu.writeto(os.path.join(path, mod1, mod2 + name)) # saves the file based on the args of the function
 
     def doBoth(self, bits):
+
+        """
+        This function calls the overlap correction functions and catches the exception
+        caused if the data already exists
+        """
+        
         try:
-            fmod = str(bits).split('.')[-1][0:-2][-2:] + "-bit-"
+            fmod = str(bits).split('.')[-1][0:-2][-2:] + "-bit-" # foo to extract a string representing the number of bits being used (used to identify the saved data)
             if not os.path.exists(os.path.join(self.directory.samplePath, fmod + "overlapCorrected")):
                 self.overlapCorrection(self.directory.samplePath, bits)
             else:
@@ -372,30 +379,40 @@ class OverlapCorrectionAndScaling:
 
 
 class ShowData:
+
+    """
+    This class handles the data visualisation of the sample
+    """
+    
     def __init__(self, root, directory):
-        self.root = root
+        self.root = root # want to show in the 'root' page
         self.directory = directory
 
-        self.fig = Figure(figsize=(7, 7))
+        self.fig = Figure(figsize=(7, 7)) 
         self.ax = self.fig.add_subplot(111)
         self.plotted = False
         self.l = None
         self.canvas = None
-        plt.show()
+        plt.show() # shows the figure upon initialisation
 
         self.slider = tk.Scale(
             self.root, from_=0, to=(len(self.directory.sampleFits.arrays) - 1), resolution=1, orient=tk.HORIZONTAL,
-            command=self.update)
+            command=self.update) # adds a slider to move through the image stack
         self.slider.pack()
 
-        self.vmax = tk.Entry(self.root, width=10)
-        self.vmax.insert(0, "100")
+        self.vmax = tk.Entry(self.root, width=10) # Text entry takes the vmax argument
+        self.vmax.insert(0, "100") # 100 is a reasonable default value for most imgs
         self.vmax.pack()
-
+        # button for accessing the histogram equalisation function
         self.button = tk.Button(text="Histogram Equalisation", command=self.contrast)
         self.button.pack()
 
     def onSelect(self, eclick, erelease):
+
+        """
+        This function handles the selection of an ROI, returning the values of the
+        rectangles corners
+        """
         print "Start position: (%f, %f)" % (eclick.xdata, eclick.ydata)
         print "End position: (%f, %f)" % (erelease.xdata, erelease.ydata)
         global a
@@ -409,19 +426,24 @@ class ShowData:
         return a, b, c, d
 
     def plot(self):
-        self.plotted = True
 
+        """
+        shows first image of stack
+        """
+        self.plotted = True
         self.s = 0
-        # im = self.directory.sampleFits.arrays[self.s]
-        # self.l = self.ax.imshow(im, cmap=plt.cm.gray, interpolation="nearest", vmin=0, vmax=int(self.vmax.get()))
         self.canvas = FigureCanvasTkAgg(self.fig, self.root)
         self.canvas.get_tk_widget().pack()
         self.canvas.draw()
         self.myrectsel = MyRectangleSelector(self.ax, self.onSelect, drawtype="box", rectprops=dict(
-            facecolor="red", edgecolor="black", alpha=0.2, fill=True))
+            facecolor="red", edgecolor="black", alpha=0.2, fill=True)) #sub class to force the rectangle to persist
 
     def update(self, val):
-        ind = int(self.slider.get())
+
+        """
+        This function deals with updating the canvas when the slider moves
+        """
+        ind = int(self.slider.get()) # position of slider for indexing stack
         if self.plotted:
             im = self.directory.sampleFits.arrays[ind]
             self.l = self.ax.imshow(im, cmap=plt.cm.gray, interpolation="nearest", vmin=0, vmax=int(self.vmax.get()))
@@ -441,6 +463,10 @@ class ShowData:
         return im2.reshape(im.shape), cdf
 
     def contrast(self):
+
+        """
+        applies the histogram equalisation to the current slice
+        """
         ind = int(self.slider.get())
         im = self.histeq(self.directory.sampleFits.arrays[ind])[0]
         self.l.set_data(im)
@@ -448,12 +474,15 @@ class ShowData:
 
 
 class MyRectangleSelector(RectangleSelector):
+    """
+    This class overrides the default behavior of RectangleSelector in order to make it
+    remain visible after releasing the mouse
+    """
     def release(self, event):
         super(MyRectangleSelector, self).release(event)
         self.to_draw.set_visible(True)
         self.canvas.draw()
         
-
 
 class TransPlot:
     def __init__(self, directory, val):
