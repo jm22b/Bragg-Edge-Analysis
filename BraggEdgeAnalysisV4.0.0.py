@@ -735,8 +735,9 @@ class ResultsTable:
         if name == None:
             return
         contents = self.textwidget.get("1.0", "end-1c")
+        print contents
         f = open(name, "wb")
-        f.writelines(contents)
+        f.writelines(contents.replace(" ", ","))
         f.close()
         
     def populateTable(self):
@@ -744,7 +745,7 @@ class ResultsTable:
         zipped = zip(TimeOfFlight, wavelength, Transmitted)
         #results = []
         for x,y,z in zipped:
-            xyzstr = "%f\t%f\t%f\n" % (x,y,z)
+            xyzstr = "%f \t%f \t%f\n" % (x,y,z)
             self.textwidget.insert(tk.END, xyzstr)
 
 
