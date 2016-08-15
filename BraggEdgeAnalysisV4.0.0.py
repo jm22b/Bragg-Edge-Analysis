@@ -690,6 +690,25 @@ class TransPlot:
         return atp, btp, ctp, dtp
 
 
+class ResultsTable:
+
+    def __init__(self):
+
+        self.frame = tk.Toplevel()
+        self.textFrame = tk.Frame(self.frame, width = 400, height = 600)
+        self.textFrame.pack(fill="both", expand=True)
+        self.textFrame.grid_propagate(False)
+        self.textFrame.grid_rowconfigure(0, weight=1)
+        self.textFrame.grid_columnconfigure(0, weight=1)
+
+        self.textwidget = tk.Text(self.textFrame, borderwidth=3, relief="sunken")
+        self.textwidget.config(font=("consolas", 12), undo=True, wrap='word')
+        self.textwidget.grid(row=0, column=0, sticky="nsew", padx=2, pady=2)
+        self.scrollbar = tk.Scrollbar(self.textFrame, command = self.textwidget.yview)
+        self.scrollbar.grid(row=0, column=1, sticky="nsew")
+        self.textwidget['yscrollcommand'] = self.scrollbar.set
+
+
 class EdgeFitting:
     def __init__(self):
 
