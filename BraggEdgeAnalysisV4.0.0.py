@@ -4,6 +4,7 @@ import os
 import numpy as np
 import ctypes
 import scipy.special
+import scipy.signal
 import warnings
 import matplotlib
 import csv
@@ -802,7 +803,7 @@ class EdgeFitting:
         self.coeff2.insert(0, "1")
         self.lambda0label.grid(sticky="W")
         self.lambda0var.grid(row=4)
-        self.lambda0var.insert(0, "1")
+        #self.lambda0var.insert(0, "1")
         self.sigmalabel.grid(sticky="W")
         self.sigmavar.grid(row=5)
         self.sigmavar.insert(0, "1")
@@ -825,6 +826,14 @@ class EdgeFitting:
                     self.subx.append(xval)
                     self.suby.append(yval)
             self.ax.plot(self.subx, self.suby, 'x')
+            arrx = np.array(self.subx)
+            arry = np.array(self.suby)
+            yfilt = scipy.signal.medfilt(arry)
+            dy = np.diff(yfilts)
+            dx = np.diff(arrx)
+            dydx = dy/dx
+            edgeIndex = np.argmax(dydx)
+            self.lambda0var.insert(0, self.subx[edgeIndex])
 
         else:
 
@@ -834,6 +843,14 @@ class EdgeFitting:
                     self.subx.append(xval)
                     self.suby.append(yval)
             self.ax.plot(self.subx, self.suby, 'x')
+            arrx = np.array(self.subx)
+            arry = np.array(self.suby)
+            yfilt = scipy.signal.medfilt(arry)
+            dy = np.diff(yfilt)
+            dx = np.diff(arrx)
+            dydx = dy/dx
+            edgeIndex = np.argmax(dydx)
+            self.lambda0var.insert(0, self.subx[edgeIndex])
 
     def fitCurve(self):
 
