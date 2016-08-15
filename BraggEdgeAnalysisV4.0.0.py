@@ -71,7 +71,7 @@ class BraggEdgeAnalysisGUI:
             #label="Z-axis Profile", command=lambda: TransPlot(self.directory, self.flightpath).ZAxisProfile())
         self.menubar.add_cascade(label="Actions", menu=self.actionmenu)
 
-        self.results.add_command(label="Results", command=lambda: ResultsTable().populateTable)
+        self.results.add_command(label="Results", command=lambda: ResultsTable().populateTable())
         self.menubar.add_cascade(label="Results", menu=self.results)
 
         root.config(menu=self.menubar)
@@ -700,25 +700,30 @@ class ResultsTable:
 
         self.frame = tk.Toplevel()
         self.textFrame = tk.Frame(self.frame, width = 400, height = 600)
+
+        self.textwidget = tk.Text(self.textFrame, borderwidth=3, relief="sunken")
+        
+        self.scrollbar = tk.Scrollbar(self.textFrame, command = self.textwidget.yview)
+
+    def populateTable(self):
+        
         self.textFrame.pack(fill="both", expand=True)
         self.textFrame.grid_propagate(False)
         self.textFrame.grid_rowconfigure(0, weight=1)
         self.textFrame.grid_columnconfigure(0, weight=1)
-
-        self.textwidget = tk.Text(self.textFrame, borderwidth=3, relief="sunken")
+        
         self.textwidget.config(font=("consolas", 12), undo=True, wrap='word')
         self.textwidget.grid(row=0, column=0, sticky="nsew", padx=2, pady=2)
-        self.scrollbar = tk.Scrollbar(self.textFrame, command = self.textwidget.yview)
+        
         self.scrollbar.grid(row=0, column=1, sticky="nsew")
         self.textwidget['yscrollcommand'] = self.scrollbar.set
-
-    def populateTable(self):
 
         zipped = zip(TimeOfFlight, wavelength, Transmitted)
         #results = []
         for x,y,z in zipped:
-            xyzstr = "%f\t%f\t%f" % (x,y,z)
-            self.textwidget.insert(-1, xyzstr)
+            xyzstr = "%f\t%f\t%f\n" % (x,y,z)
+            print xyzstr
+            self.textwidget.insert(tk.END, xyzstr)
 
 
 class EdgeFitting:
