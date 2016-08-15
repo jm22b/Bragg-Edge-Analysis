@@ -704,8 +704,13 @@ class ResultsTable:
         self.textwidget = tk.Text(self.textFrame, borderwidth=3, relief="sunken")
         
         self.scrollbar = tk.Scrollbar(self.textFrame, command = self.textwidget.yview)
+        
+        self.menubar = tk.Menu(self.frame)
+        self.filemenu = tk.Menu(self.menubar, tearoff=0)
+        
+        self.widgets()
 
-    def populateTable(self):
+    def widgets(self):
         
         self.textFrame.pack(fill="both", expand=True)
         self.textFrame.grid_propagate(False)
@@ -717,6 +722,15 @@ class ResultsTable:
         
         self.scrollbar.grid(row=0, column=1, sticky="nsew")
         self.textwidget['yscrollcommand'] = self.scrollbar.set
+        
+        self.filemenu.add_command(label="Save As", command=self.save)
+        self.menubar.add_cascade(label="File", menu=self.filemenu)
+        self.frame.config(menu=self.menubar)
+        
+    def save(self):
+        pass
+        
+    def populateTable(self):
 
         zipped = zip(TimeOfFlight, wavelength, Transmitted)
         #results = []
