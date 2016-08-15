@@ -31,6 +31,7 @@ class BraggEdgeAnalysisGUI:
         self.actionmenu = tk.Menu(self.menubar, tearoff=0) # add an action menu
         self.transplot = tk.Menu(self.menubar) # add a sub menu for plotting functions
         self.bits = tk.Menu(self.menubar, tearoff=0) # sub menu for choosing 16/32 bit options
+        self.results = tk.Menu(self.menubar, tearoff=0)
         # button for showing the sample images
         self.showDataButton = tk.Button(
             self.frame, text="Show Sample", width=10, command=lambda: ShowData(self.root, self.directory).plot())
@@ -69,6 +70,9 @@ class BraggEdgeAnalysisGUI:
         #self.actionmenu.add_command(
             #label="Z-axis Profile", command=lambda: TransPlot(self.directory, self.flightpath).ZAxisProfile())
         self.menubar.add_cascade(label="Actions", menu=self.actionmenu)
+
+        self.results.add_command(label="Results", command=lambda: ResultsTable())
+        self.menubar.add_cascade(label="Results", menu=self.results)
 
         root.config(menu=self.menubar)
         # supplies a default value to the flight path
