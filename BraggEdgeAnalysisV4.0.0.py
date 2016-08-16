@@ -735,7 +735,7 @@ class EdgeFitting:
         self.coeff1.insert(0, "1")
         self.coeff2label.grid(sticky="W")
         self.coeff2.grid(row=3)
-        self.coeff2.insert(0, "1")
+        #self.coeff2.insert(0, "1")
         self.lambda0label.grid(sticky="W")
         self.lambda0var.grid(row=4)
         #self.lambda0var.insert(0, "1")
@@ -744,7 +744,7 @@ class EdgeFitting:
         self.sigmavar.insert(0, "1")
         self.taulabel.grid(sticky="W")
         self.tauvar.grid(row=6)
-        self.tauvar.insert(0, "1")
+        self.tauvar.insert(0, "0.01")
 
     def func(self, x, c_1, c_2, lambda0, sigma, tau):
         return c_1 * (scipy.special.erfc((lambda0 - x) / (np.sqrt(2) * sigma)) - np.exp(
