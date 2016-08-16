@@ -67,7 +67,7 @@ class BraggEdgeAnalysisGUI:
         #self.transplot.add_command(
             #label="Plot (Wavelength)", command=lambda: TransPlot(self.directory, self.flightpath).combinedTransPlot())
         self.actionmenu.add_separator()
-        self.actionmenu.add_command(label="Fit Bragg Edge", command=lambda: EdgeFitting().subPlot())
+        self.actionmenu.add_command(label="Fit Bragg Edge", command=lambda: EdgeFitting().subplotCall())
         #self.actionmenu.add_separator()
         #self.actionmenu.add_command(
             #label="Z-axis Profile", command=lambda: TransPlot(self.directory, self.flightpath).ZAxisProfile())
@@ -504,13 +504,6 @@ class TransPlot:
         self.curr_pos = 0
         self.currT_pos = 0
 
-        global transW
-        transW = []
-        global wavelength
-        wavelength = []
-        global timeOF
-        timeOF = []
-
     def produceTransData(self):
 
         scaledIntensities = []
@@ -563,7 +556,7 @@ class TransPlot:
         self.ax2.set_xlabel(self.xTlabels[0])
         self.ax2.set_ylabel("Neutron Transmission")
         plt.show()
-        return Transmitted, TimeOfFLight, wavelength
+        return Transmitted, TimeOfFlight, wavelength
         
     def key_event_Transmission(self, e):
         
@@ -582,64 +575,6 @@ class TransPlot:
             self.ax2, self.onSelect, drawtype='box', rectprops=dict(
                 facecolor='red', edgecolor='black', alpha=0.5, fill=True))
         self.fig2.canvas.draw()
-
-    """
-    def plotTransTOF(self):
-
-        plt.cla()
-        xyData = self.produceTransData()
-        global transT
-        transT = xyData[1]
-        global timeOF
-        timeOF = xyData[0]
-
-        ymin = min(xyData[1]) - 0.05
-        ymax = max(xyData[1]) + 0.05
-
-        self.fig = plt.figure(1)
-        self.ax = self.fig.add_subplot(111)
-        self.ax.autoscale(enable=True, axis="both", tight=True)
-        self.myrectsel = MyRectangleSelector(
-            self.ax, self.onSelect, drawtype='box', rectprops=dict(
-                facecolor='red', edgecolor='black', alpha=0.5, fill=True))
-
-        plt.plot(xyData[0], xyData[1])
-        plt.ylim(ymin, ymax)
-        plt.xlabel("Time of Flight (s)")
-        plt.ylabel("Neutron Transmission")
-        plt.show()
-        plt.close()
-
-        return timeOF, transT
-    """
-    """
-    def plotTransWavelength(self):
-
-        plt.cla()
-        xyData = self.produceTransData()
-        global transW
-        transW = xyData[1]
-        global wavelength
-        wavelength = self.convertToWavelength(xyData[0])
-
-        ymin = min(xyData[1]) - 0.05
-        ymax = max(xyData[1]) + 0.05
-
-        self.fig = plt.figure(1)
-        self.ax = self.fig.add_subplot(111)
-        self.ax.autoscale(enable=True, axis="both", tight=True)
-        self.myrectsel = MyRectangleSelector(
-            self.ax, self.onSelect, drawtype='box', rectprops=dict(
-                facecolor='red', edgecolor='black', alpha=0.5, fill=True))
-
-        plt.plot(wavelength, xyData[1])
-        plt.xlabel(u"Wavelength (\u00C5)")
-        plt.ylabel("Neutron Transmission")
-        plt.ylim(ymin, ymax)
-        plt.show()
-        plt.close()
-        return wavelength, transW
-    """
 
     def ZAxisProfile(self):
 
@@ -816,9 +751,28 @@ class EdgeFitting:
             ((lambda0 - x) / tau) + (sigma ** 2 / (2 * tau ** 2))) * scipy.special.erfc(
             ((lambda0 - x) / (np.sqrt(2) * sigma)) + sigma / (np.sqrt(2) * tau))) + c_2
 
-    def subPlot(self):
+    def subPlot(self, XData, YData):
+        
+        zipped = zip(XData, YData)
+        for xval, yval in zipped:
+            if xval >= atp and xval <=btp:
+                self.subx.append(xval)
+                self.suby.append(yval)
+        self.ax.plot(self.subx, self.suby, 'x')
+        arrx = np.array(self.subx)
+        arry = np.array(self.suby)
+        yfilt = scipy.signal.medfilt(arry)
+        dy = np.diff(yfilt)
+        dx = np.diff(arrx)
+        dydx = dy/dx
+        edgeIndex = np.argmax(dydx)
+        self.lambda0var.insert(0, self.subx[edgeIndex])
+        edgeheight = np.median(arry[0:edgeIndex])
+        self.coeff2.insert(0, edgeheight)
 
+        """
         if wavelength == []:
+            print "a"
 
             zipped = zip(TimeOfFlight, Transmitted)
             for xval, yval in zipped:
@@ -829,7 +783,7 @@ class EdgeFitting:
             arrx = np.array(self.subx)
             arry = np.array(self.suby)
             yfilt = scipy.signal.medfilt(arry)
-            dy = np.diff(yfilts)
+            dy = np.diff(yfilt)
             dx = np.diff(arrx)
             dydx = dy/dx
             edgeIndex = np.argmax(dydx)
@@ -844,6 +798,7 @@ class EdgeFitting:
             #f.close()
 
         else:
+            print "b"
 
             zipped = zip(wavelength, Transmitted)
             for xval, yval in zipped:
@@ -867,6 +822,13 @@ class EdgeFitting:
                 #line = "%f,%f\n" % (x,y)
                 #f.writelines(line)
             #f.close()
+        """
+    def subplotCall(self):
+        
+        if atp < 1:
+            self.subPlot(TimeOfFlight, Transmitted)
+        else:
+            self.subPlot(wavelength, Transmitted)
 
     def fitCurve(self):
 
