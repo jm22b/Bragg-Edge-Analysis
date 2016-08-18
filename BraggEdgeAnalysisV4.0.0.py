@@ -11,9 +11,10 @@ import csv
 # this backend must be used
 matplotlib.use("TkAgg")
 from matplotlib import pyplot as plt
+from matplotlib import path
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2TkAgg  # Note: add toolbar
 from matplotlib.figure import Figure
-from matplotlib.widgets import Slider, RectangleSelector
+from matplotlib.widgets import Slider, RectangleSelector, LassoSelector
 from scipy.optimize import curve_fit, OptimizeWarning
 from tkFileDialog import askdirectory, asksaveasfilename
 from astropy.io import fits
@@ -43,25 +44,35 @@ class BraggEdgeAnalysisGUI:
         self.widgets()
 
     def widgets(self):
+        
         root.option_add("*tearoff", "FALSE")
         # populates top level menus and maps the commands to them
+        
         self.filemenu.add_command(
             label="Load Open Beam", command=self.directory.getOpenPath)
+        
         self.filemenu.add_separator()
         self.filemenu.add_command(
             label="Load Sample Beam", command=self.directory.getSamplePath)
+        
         self.filemenu.add_separator()
         self.filemenu.add_command(label="Exit", command=root.destroy)
         self.menubar.add_cascade(label="File", menu=self.filemenu)
 
         self.actionmenu.add_cascade(label="Correct & Scale Data", menu=self.bits)
-        self.bits.add_command(label="16 Bit Integer Data", command=lambda: self.correction.doBoth(np.int16))
+        self.bits.add_command(
+            label="16 Bit Integer Data", command=lambda: self.correction.doBoth(np.int16))
+        
         self.bits.add_separator()
-        self.bits.add_command(label="32 Bit Float Data", command=lambda: self.correction.doBoth(np.float32))
+        self.bits.add_command(
+            label="32 Bit Float Data", command=lambda: self.correction.doBoth(np.float32))
+        
         self.actionmenu.add_separator()
         self.actionmenu.add_cascade(label="Plotting", menu=self.transplot)
         self.transplot.add_command(
-            label="Transmission Plots", command=lambda: TransPlot(self.directory, self.flightpath).combinedTransPlot())
+            label="Transmission Plots", command=lambda: TransPlot(
+                self.directory, self.flightpath).combinedTransPlot())
+        
         self.transplot.add_separator()
         self.transplot.add_command(label="Z-Axis Profile", command=lambda: TransPlot(self.directory, self.flightpath).ZAxisProfile())
 
@@ -891,6 +902,7 @@ class StrainMapping:
         
         self.directory = directory
         self.sampleArray = self.directory.sampleFits.arrays
+        self.im = self.sampleArray[sliderInd]
         
         self.frame = tk.Toplevel()
         self.fig = Figure(figsize=(5, 5))
@@ -900,8 +912,32 @@ class StrainMapping:
         self.canvas.show()
         self.canvas.get_tk_widget().grid(row=0)
         
+        self.mask = np.zeros((512,512))
+        self.pix = np.arange(512)
+        self.XX, self.YY = np.meshgrid(self.pix, self.pix)
+        self.pix = np.vstack((self.XX.flatten(), self.YY.flatten())).T
+        self.lasso = LassoSelector(self.ax, self.onselect)
+        
     def do(self):
-        self.ax.imshow(self.sampleArray[sliderInd])
+        self.ax.imshow(self.im, cmap = plt.cm.gray)
+        
+        
+    def updateArray(self, im, indices, mask):
+        lin = np.arange(self.im.size)
+        mask = mask.flatten()
+        mask[lin[indices]] = 1
+        newArray = im.flatten()
+        #newArray[lin[indices]] = 1
+        newArray = newArray*mask
+        self.ax.imshow(newArray.reshape(self.im.shape), cmap=plt.cm.gray)
+        self.canvas.draw()
+        return newArray.reshape(self.im.shape)
+
+    def onselect(self, verts):
+        p = path.Path(verts)
+        ind = p.contains_points(self.pix, radius=1)
+        array = self.updateArray(self.im, ind, self.mask)
+        self.canvas.draw_idle()
 
 
 if __name__ == "__main__":
