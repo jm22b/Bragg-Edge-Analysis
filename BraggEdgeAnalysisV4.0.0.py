@@ -64,13 +64,13 @@ class BraggEdgeAnalysisGUI:
             label="Transmission Plots", command=lambda: TransPlot(self.directory, self.flightpath).combinedTransPlot())
         self.transplot.add_separator()
         self.transplot.add_command(label="Z-Axis Profile", command=lambda: TransPlot(self.directory, self.flightpath).ZAxisProfile())
-        #self.transplot.add_command(
-            #label="Plot (Wavelength)", command=lambda: TransPlot(self.directory, self.flightpath).combinedTransPlot())
+
         self.actionmenu.add_separator()
         self.actionmenu.add_command(label="Fit Bragg Edge", command=lambda: EdgeFitting().subplotCall())
-        #self.actionmenu.add_separator()
-        #self.actionmenu.add_command(
-            #label="Z-axis Profile", command=lambda: TransPlot(self.directory, self.flightpath).ZAxisProfile())
+        
+        self.actionmenu.add_separator()
+        self.actionmenu.add_command(label="2D Strain Mapping", command=lambda: StrainMapping(self.directory).do())
+
         self.menubar.add_cascade(label="Actions", menu=self.actionmenu)
 
         self.results.add_command(label="Results", command=lambda: ResultsTable().populateTable())
@@ -449,13 +449,15 @@ class ShowData:
         """
         This function deals with updating the canvas when the slider moves
         """
-        ind = int(self.slider.get()) # position of slider for indexing stack
+        global sliderInd
+        sliderInd = int(self.slider.get()) # position of slider for indexing stack
         if self.plotted:
-            im = self.directory.sampleFits.arrays[ind]
+            im = self.directory.sampleFits.arrays[sliderInd]
             self.l = self.ax.imshow(im, cmap=plt.cm.gray, interpolation="nearest", vmin=0, vmax=int(self.vmax.get()))
             # self.l.set_data(im)
             # print self.directory.sampleFits.arrays[ind]
             self.canvas.draw()
+        return sliderInd
 
     def histeq(self, im, nbr_bins=256):
         # get image histogram
@@ -551,6 +553,8 @@ class TransPlot:
             self.ax2, self.onSelect, drawtype='box', rectprops=dict(
                 facecolor='red', edgecolor='black', alpha=0.5, fill=True)))
         self.fig2.canvas.mpl_connect("key_press_event", self.key_event_Transmission)
+        self.ax2.ymin = np.min(Transmitted) - 0.05
+        self.ax2.ymax = np.max(Transmitted) + 0.05
         self.ax2.plot(TimeOfFlight, Transmitted)
         self.xTlabels = ["TOF (s)", u"Wavelength (\u00C5)"]
         self.ax2.set_xlabel(self.xTlabels[0])
@@ -645,11 +649,19 @@ class ResultsTable:
         self.menubar = tk.Menu(self.frame)
         self.filemenu = tk.Menu(self.menubar, tearoff=0)
         
+        self.TOFlabel = tk.Label(self.frame, text=u"TOF (s)      wavelength (\u00C5) Transmisson")
+        #self.wavelengthlabel = tk.Label(self.frame, text=u"wavelength (\u00C5)")
+        #self.transmissionlabel = tk.Label(self.frame, text="Transmisson")
+        
         self.widgets()
 
     def widgets(self):
         
-        self.textFrame.pack(fill="both", expand=True)
+        self.TOFlabel.pack()
+        #self.wavelengthlabel.pack(side="left")
+        #self.transmissionlabel.pack(side="left")
+        
+        self.textFrame.pack(side='bottom', fill="both", expand=True)
         self.textFrame.grid_propagate(False)
         self.textFrame.grid_rowconfigure(0, weight=1)
         self.textFrame.grid_columnconfigure(0, weight=1)
@@ -871,6 +883,25 @@ class EdgeFitting:
         fields = [self.coeff1, self.coeff2, self.lambda0var, self.sigmavar, self.tauvar]
         for field in fields:
             field.delete(0, "end")
+        
+        
+class StrainMapping:
+        
+    def __init__(self, directory):
+        
+        self.directory = directory
+        self.sampleArray = self.directory.sampleFits.arrays
+        
+        self.frame = tk.Toplevel()
+        self.fig = Figure(figsize=(5, 5))
+        self.ax = self.fig.add_subplot(111)
+
+        self.canvas = FigureCanvasTkAgg(self.fig, master=self.frame)
+        self.canvas.show()
+        self.canvas.get_tk_widget().grid(row=0)
+        
+    def do(self):
+        self.ax.imshow(self.sampleArray[sliderInd])
 
 
 if __name__ == "__main__":
