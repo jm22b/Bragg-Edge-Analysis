@@ -18,6 +18,7 @@ from matplotlib.widgets import Slider, RectangleSelector, LassoSelector
 from scipy.optimize import curve_fit, OptimizeWarning
 from tkFileDialog import askdirectory, asksaveasfilename
 from astropy.io import fits
+from skimage.filters.rank import mean
 
 # Main page of the GUI
 class BraggEdgeAnalysisGUI:
@@ -925,13 +926,26 @@ class StrainMapping:
     def strainMap(self):
         zipped = zip(self.sampleArray, self.openArray)
         transmitted = []
+        l = 0
         for sample, empty in zipped:
-            sample *= self.mask
-            empty *= self.mask
+            #sample = sample * self.mask
+            #empty = empty * self.mask
+            avgSample = mean(sample, np.ones((5,5)))
+            avgEmpty = mean(empty, np.ones((5,5)))
+            """
             for i in range(512):
                 for j in range(512):
-                    transmitted.append((sum(sum(sample[max(i-10, 0):min(i+10, len(sample)), max(j-10, 0):min(j+10, len(sample)) / 100])))/
+                    if sum(sum(sample[max(i-10, 0):min(i+10, len(sample)), max(j-10, 0):min(j+10, len(sample)) / 100])) == 0:
+                        pass
+                    else:
+                        
+                        transmitted.append((sum(sum(sample[max(i-10, 0):min(i+10, len(sample)), max(j-10, 0):min(j+10, len(sample)) / 100])))/
                     (sum(sum(empty[max(i-10, 0):min(i+10, len(sample)), max(j-10, 0):min(j+10, len(sample)) / 100]))))
+            i+=1
+            print i
+            """
+            l += 1
+            print l
         print transmitted
         
         
