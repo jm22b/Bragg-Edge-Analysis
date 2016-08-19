@@ -80,7 +80,7 @@ class BraggEdgeAnalysisGUI:
         self.actionmenu.add_command(label="Fit Bragg Edge", command=lambda: EdgeFitting().subplotCall())
         
         self.actionmenu.add_separator()
-        self.actionmenu.add_command(label="2D Strain Mapping", command=lambda: StrainMapping(self.directory).do())
+        self.actionmenu.add_command(label="2D Strain Mapping", command=lambda: StrainMapping(self.directory).strainMap())
 
         self.menubar.add_cascade(label="Actions", menu=self.actionmenu)
 
@@ -921,6 +921,18 @@ class StrainMapping:
         
     def do(self):
         self.ax.imshow(self.im, cmap = plt.cm.gray)
+
+    def strainMap(self):
+        zipped = zip(self.sampleArray, self.openArray)
+        transmitted = []
+        for sample, empty in zipped:
+            sample *= self.mask
+            empty *= self.mask
+            for i in range(512):
+                for j in range(512):
+                    transmitted.append((sum(sum(sample[max(i-10, 0):min(i+10, len(sample)), max(j-10, 0):min(j+10, len(sample)) / 100])))/
+                    (sum(sum(empty[max(i-10, 0):min(i+10, len(sample)), max(j-10, 0):min(j+10, len(sample)) / 100]))))
+        print transmitted
         
         
     def updateArray(self, im, indices, mask):
