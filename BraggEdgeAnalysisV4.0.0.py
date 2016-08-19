@@ -902,6 +902,7 @@ class StrainMapping:
         
         self.directory = directory
         self.sampleArray = self.directory.sampleFits.arrays
+        self.openArray = self.directory.openFits.arrays
         self.im = self.sampleArray[sliderInd]
         
         self.frame = tk.Toplevel()
@@ -931,6 +932,7 @@ class StrainMapping:
         newArray = newArray*mask
         self.ax.imshow(newArray.reshape(self.im.shape), cmap=plt.cm.gray)
         self.canvas.draw()
+        print mask
         return newArray.reshape(self.im.shape)
 
     def onselect(self, verts):
