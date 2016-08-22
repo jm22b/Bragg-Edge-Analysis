@@ -82,7 +82,7 @@ class BraggEdgeAnalysisGUI:
         self.actionmenu.add_command(label="Fit Bragg Edge", command=lambda: EdgeFitting().subplotCall())
         
         self.actionmenu.add_separator()
-        self.actionmenu.add_command(label="2D Strain Mapping", command=lambda: StrainMapping(self.directory).strainMap())
+        self.actionmenu.add_command(label="2D Strain Mapping", command=lambda: StrainMapping(self.directory).do())
 
         self.menubar.add_cascade(label="Actions", menu=self.actionmenu)
 
@@ -779,10 +779,17 @@ class EdgeFitting:
     def subPlot(self, XData, YData):
         
         zipped = zip(XData, YData)
+        pos = 0
+        global posList 
+        posList = []
+        
         for xval, yval in zipped:
             if xval >= atp and xval <=btp:
                 self.subx.append(xval)
                 self.suby.append(yval)
+                posList.append(pos)
+                pos += 1
+            pos += 1
         self.ax.plot(self.subx, self.suby, 'x')
         arrx = np.array(self.subx)
         arry = np.array(self.suby)
@@ -853,6 +860,8 @@ class EdgeFitting:
                 #f.writelines(line)
             #f.close()
         """
+        print posList, len(posList)
+        return posList
     def subplotCall(self):
         
         if atp < 1:
@@ -868,7 +877,7 @@ class EdgeFitting:
 
             self.ax.cla()
             self.ax.plot(self.subx, self.suby, 'x')
-
+            global initial_guess
             initial_guess = [float(
                 self.coeff1.get()), float(
                 self.coeff2.get()), float(self.lambda0var.get()), float(self.sigmavar.get()), float(self.tauvar.get())]
@@ -882,6 +891,7 @@ class EdgeFitting:
             self.lambda0var.insert(0, popt[2])
             self.sigmavar.insert(0, popt[3])
             self.tauvar.insert(0, popt[4])
+            return initial_guess
         except (RuntimeError, OptimizeWarning):
             self.ax.cla()
             self.ax.plot(self.subx, self.suby, 'x')
@@ -910,10 +920,14 @@ class StrainMapping:
         self.frame = tk.Toplevel()
         self.fig = Figure(figsize=(5, 5))
         self.ax = self.fig.add_subplot(111)
+        
+        self.strainButton = tk.Button(self.frame, text="do", command=self.strainMap)
 
         self.canvas = FigureCanvasTkAgg(self.fig, master=self.frame)
         self.canvas.show()
         self.canvas.get_tk_widget().grid(row=0)
+        
+        self.strainButton.grid(row=1)
         
         self.mask = np.zeros((512,512))
         self.pix = np.arange(512)
@@ -923,16 +937,17 @@ class StrainMapping:
         
     def do(self):
         self.ax.imshow(self.im, cmap = plt.cm.gray)
+        
 
     def strainMap(self):
         zipped = zip(self.sampleArray, self.openArray)
-        transmitted = np.zeros((len(zipped),512*512)).astype(np.int16)
+        transmitted = np.zeros((len(zipped),1,512*512)).astype(np.float32)
         l = 0
         kernel = np.ones((5,5))
         kernel = kernel / kernel.sum()
         for sample, empty in zipped:
-            #sample = sample * self.mask
-            #empty = empty * self.mask
+            sample = sample * self.mask.reshape(512,512)
+            empty = empty * self.mask.reshape(512,512)
             
             transmitted[l] = convolve2d(sample, kernel, mode='same').flatten() / convolve2d(empty, kernel, mode='same').flatten()
             """
@@ -949,19 +964,40 @@ class StrainMapping:
             """
             l += 1
             print l
-        print transmitted
         
+        lambdas = []
+        for c in range(512*512):
+            if transmitted[:,:,c][posList[0]:posList[-1]].all() == False:
+                lambdas.append(0)
+                print 'empty'
+
+            else:
+                popt, pcov = curve_fit(self.func, posList, np.dstack(np.nan_to_num(transmitted[:,:,c][posList[0]:posList[-1]+1]))[0][0], p0=initial_guess)
+                    
+                lambdas.append(initial_guess[2] - popt[2])
+                "fit Bragg edge, record position"
+                print 'full'
+
+                
+        plt.imshow(np.array(lambdas).reshape(512,512))
+        plt.show()
+        plt.close()
+                
+    def func(self, x, c_1, c_2, lambda0, sigma, tau):
+        return c_1 * (scipy.special.erfc((lambda0 - x) / (np.sqrt(2) * sigma)) - np.exp(
+            ((lambda0 - x) / tau) + (sigma ** 2 / (2 * tau ** 2))) * scipy.special.erfc(
+            ((lambda0 - x) / (np.sqrt(2) * sigma)) + sigma / (np.sqrt(2) * tau))) + c_2   
         
-    def updateArray(self, im, indices, mask):
+    def updateArray(self, im, indices,mask):
         lin = np.arange(self.im.size)
-        mask = mask.flatten()
-        mask[lin[indices]] = 1
+        self.mask = self.mask.flatten()
+        self.mask[lin[indices]] = 1
         newArray = im.flatten()
         #newArray[lin[indices]] = 1
-        newArray = newArray*mask
+        newArray = newArray*self.mask
         self.ax.imshow(newArray.reshape(self.im.shape), cmap=plt.cm.gray)
         self.canvas.draw()
-        print mask
+        print self.mask
         return newArray.reshape(self.im.shape)
 
     def onselect(self, verts):
