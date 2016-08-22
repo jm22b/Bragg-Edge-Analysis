@@ -16,9 +16,10 @@ from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolb
 from matplotlib.figure import Figure
 from matplotlib.widgets import Slider, RectangleSelector, LassoSelector
 from scipy.optimize import curve_fit, OptimizeWarning
+from scipy.signal import convolve2d
 from tkFileDialog import askdirectory, asksaveasfilename
 from astropy.io import fits
-from skimage.filters.rank import mean
+#from skimage.filters.rank import mean
 
 # Main page of the GUI
 class BraggEdgeAnalysisGUI:
@@ -925,13 +926,15 @@ class StrainMapping:
 
     def strainMap(self):
         zipped = zip(self.sampleArray, self.openArray)
-        transmitted = []
+        transmitted = np.zeros((len(zipped),512*512)).astype(np.int16)
         l = 0
+        kernel = np.ones((5,5))
+        kernel = kernel / kernel.sum()
         for sample, empty in zipped:
             #sample = sample * self.mask
             #empty = empty * self.mask
-            avgSample = mean(sample, np.ones((5,5)))
-            avgEmpty = mean(empty, np.ones((5,5)))
+            
+            transmitted[l] = convolve2d(sample, kernel, mode='same').flatten() / convolve2d(empty, kernel, mode='same').flatten()
             """
             for i in range(512):
                 for j in range(512):
