@@ -779,7 +779,7 @@ class EdgeFitting:
     def subPlot(self, XData, YData):
         
         zipped = zip(XData, YData)
-        pos = 0
+        #pos = 0
         global posList 
         posList = []
         
@@ -787,9 +787,9 @@ class EdgeFitting:
             if xval >= atp and xval <=btp:
                 self.subx.append(xval)
                 self.suby.append(yval)
-                posList.append(pos)
-                pos += 1
-            pos += 1
+                posList.append(zipped.index((xval,yval)))
+                #pos += 1
+            #pos += 1
         self.ax.plot(self.subx, self.suby, 'x')
         arrx = np.array(self.subx)
         arry = np.array(self.suby)
@@ -891,6 +891,9 @@ class EdgeFitting:
             self.lambda0var.insert(0, popt[2])
             self.sigmavar.insert(0, popt[3])
             self.tauvar.insert(0, popt[4])
+            initial_guess = [float(
+                self.coeff1.get()), float(
+                self.coeff2.get()), float(self.lambda0var.get()), float(self.sigmavar.get()), float(self.tauvar.get())]
             return initial_guess
         except (RuntimeError, OptimizeWarning):
             self.ax.cla()
@@ -940,8 +943,10 @@ class StrainMapping:
         
 
     def strainMap(self):
+        print initial_guess
         zipped = zip(self.sampleArray, self.openArray)
         transmitted = np.zeros((len(zipped),1,512*512)).astype(np.float32)
+        
         l = 0
         kernel = np.ones((5,5))
         kernel = kernel / kernel.sum()
@@ -950,18 +955,6 @@ class StrainMapping:
             empty = empty * self.mask.reshape(512,512)
             
             transmitted[l] = convolve2d(sample, kernel, mode='same').flatten() / convolve2d(empty, kernel, mode='same').flatten()
-            """
-            for i in range(512):
-                for j in range(512):
-                    if sum(sum(sample[max(i-10, 0):min(i+10, len(sample)), max(j-10, 0):min(j+10, len(sample)) / 100])) == 0:
-                        pass
-                    else:
-                        
-                        transmitted.append((sum(sum(sample[max(i-10, 0):min(i+10, len(sample)), max(j-10, 0):min(j+10, len(sample)) / 100])))/
-                    (sum(sum(empty[max(i-10, 0):min(i+10, len(sample)), max(j-10, 0):min(j+10, len(sample)) / 100]))))
-            i+=1
-            print i
-            """
             l += 1
             print l
         
@@ -972,13 +965,12 @@ class StrainMapping:
                 print 'empty'
 
             else:
-                popt, pcov = curve_fit(self.func, posList, np.dstack(np.nan_to_num(transmitted[:,:,c][posList[0]:posList[-1]+1]))[0][0], p0=initial_guess)
+                popt, pcov = curve_fit(self.func, wavelength[posList[0]:posList[-1]+1], np.dstack(np.nan_to_num(transmitted[:,:,c][posList[0]:posList[-1]+1]))[0][0], p0=initial_guess)
                     
+                initial_guess = [popt[0], popt[1], popt[2], popt[3], popt[4]]
                 lambdas.append(initial_guess[2] - popt[2])
                 "fit Bragg edge, record position"
-                print 'full'
-
-                
+                print 'full'                
         plt.imshow(np.array(lambdas).reshape(512,512))
         plt.show()
         plt.close()
