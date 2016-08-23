@@ -965,13 +965,18 @@ class StrainMapping:
                 print 'empty'
 
             else:
-                popt, pcov = curve_fit(self.func, wavelength[posList[0]:posList[-1]+1], np.dstack(np.nan_to_num(transmitted[:,:,c][posList[0]:posList[-1]+1]))[0][0], p0=initial_guess)
-                    
-                initial_guess = [popt[0], popt[1], popt[2], popt[3], popt[4]]
-                lambdas.append(initial_guess[2] - popt[2])
-                "fit Bragg edge, record position"
-                print 'full'                
-        plt.imshow(np.array(lambdas).reshape(512,512))
+                try:
+                    popt, pcov = curve_fit(self.func, wavelength[posList[0]:posList[-1]+1], np.dstack(np.nan_to_num(transmitted[:,:,c][posList[0]:posList[-1]+1]))[0][0], p0=initial_guess)
+                
+                    lambdas.append((initial_guess[2] - popt[2])/initial_guess[2])
+                    print 'full'
+                    "fit Bragg edge, record position"
+                except (OptimizeWarning, RuntimeError):
+                    lambdas.append((initial_guess[2] - popt[2])/initial_guess[2])
+                    print 'Exception'
+                
+                
+        plt.imshow(np.array(lambdas).reshape(512,512), cmap=plt.cm.inferno)
         plt.show()
         plt.close()
                 
