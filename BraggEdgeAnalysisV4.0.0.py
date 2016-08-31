@@ -921,7 +921,7 @@ class StrainMapping:
         self.im = self.sampleArray[sliderInd]
         
         self.frame = tk.Toplevel()
-        self.fig = Figure(figsize=(5, 5))
+        self.fig = Figure(figsize=(7, 7))
         self.ax = self.fig.add_subplot(111)
         
         self.strainButton = tk.Button(self.frame, text="do", command=self.strainMap)
@@ -929,7 +929,7 @@ class StrainMapping:
         self.canvas = FigureCanvasTkAgg(self.fig, master=self.frame)
         self.canvas.show()
         self.canvas.get_tk_widget().grid(row=0)
-        
+        self.canvas.mpl_connect('key_press_event', self.onKey)
         self.strainButton.grid(row=1)
         
         self.mask = np.zeros((512,512))
@@ -938,12 +938,15 @@ class StrainMapping:
         self.pix = np.vstack((self.XX.flatten(), self.YY.flatten())).T
         self.lasso = LassoSelector(self.ax, self.onselect)
         
+        
+        
     def do(self):
+        self.canvas.mpl_connect('key_press_event', self.onKey)
         self.ax.imshow(self.im, cmap = plt.cm.gray)
         
 
     def strainMap(self):
-        print initial_guess
+
         zipped = zip(self.sampleArray, self.openArray)
         transmitted = np.zeros((len(zipped),1,512*512)).astype(np.float32)
         
@@ -976,7 +979,11 @@ class StrainMapping:
                     print 'Exception'
                 
                 
-        plt.imshow(np.array(lambdas).reshape(512,512), cmap=plt.cm.inferno)
+        strainMap = np.array(lambdas).reshape(512,512)*self.mask.reshape(512,512) 
+        strainMap = np.ma.masked_where(strainMap == 0, strainMap)
+        cmap = plt.cm.jet
+        cmap.set_bad(color='black')
+        plt.imshow(strainMap, interpolation='None', cmap=cmap)
         plt.show()
         plt.close()
                 
@@ -1002,6 +1009,12 @@ class StrainMapping:
         ind = p.contains_points(self.pix, radius=1)
         array = self.updateArray(self.im, ind, self.mask)
         self.canvas.draw_idle()
+        
+    def onKey(self, event):
+        print "key pressed"
+        if event.key == 'r':
+            self.ax.imshow(self.im, cmap=plt.cm.gray)
+            self.canvas.draw()
 
 
 if __name__ == "__main__":
