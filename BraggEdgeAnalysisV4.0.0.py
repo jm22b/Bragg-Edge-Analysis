@@ -34,7 +34,7 @@ class BraggEdgeAnalysisGUI:
         self.menubar = tk.Menu(self.root)  # creates top level menus to be populated in widgets()
         self.filemenu = tk.Menu(self.menubar, tearoff=0) # add a file menu
         self.actionmenu = tk.Menu(self.menubar, tearoff=0) # add an action menu
-        self.transplot = tk.Menu(self.menubar) # add a sub menu for plotting functions
+        self.transplot = tk.Menu(self.menubar, tearoff=0) # add a sub menu for plotting functions
         self.bits = tk.Menu(self.menubar, tearoff=0) # sub menu for choosing 16/32 bit options
         self.results = tk.Menu(self.menubar, tearoff=0)
         # button for showing the sample images
@@ -83,6 +83,9 @@ class BraggEdgeAnalysisGUI:
         
         self.actionmenu.add_separator()
         self.actionmenu.add_command(label="2D Strain Mapping", command=lambda: StrainMapping(self.directory).do())
+        
+        self.actionmenu.add_separator()
+        self.actionmenu.add_command(label="Principal Component Analysis", command=lambda: PrincipalComponentAnalysis(self.directory).controller())
 
         self.menubar.add_cascade(label="Actions", menu=self.actionmenu)
 
@@ -568,7 +571,7 @@ class TransPlot:
         self.fig2.canvas.mpl_connect("key_press_event", self.key_event_Transmission)
         self.ax2.ymin = np.min(Transmitted) - 0.05
         self.ax2.ymax = np.max(Transmitted) + 0.05
-        self.ax2.plot(TimeOfFlight, Transmitted)
+        self.ax2.plot(TimeOfFlight, Transmitted, 'x', ms=3)
         self.xTlabels = ["TOF (s)", u"Wavelength (\u00C5)"]
         self.ax2.set_xlabel(self.xTlabels[0])
         self.ax2.set_ylabel("Neutron Transmission")
@@ -585,7 +588,7 @@ class TransPlot:
             return
         self.currT_pos %= len(self.TransPlots)
         self.ax2.cla()
-        self.ax2.plot(self.TransPlots[self.currT_pos][0], self.TransPlots[self.currT_pos][1])
+        self.ax2.plot(self.TransPlots[self.currT_pos][0], self.TransPlots[self.currT_pos][1], 'x', ms=3)
         self.ax2.set_xlabel(self.xTlabels[self.currT_pos])
         self.ax2.set_ylabel("Neutron Transmission")
         self.myrectsel = MyRectangleSelector(
@@ -921,7 +924,7 @@ class StrainMapping:
         self.im = self.sampleArray[sliderInd]
         
         self.frame = tk.Toplevel()
-        self.fig = Figure(figsize=(5, 5))
+        self.fig = Figure(figsize=(7, 7))
         self.ax = self.fig.add_subplot(111)
         
         self.strainButton = tk.Button(self.frame, text="do", command=self.strainMap)
@@ -929,7 +932,7 @@ class StrainMapping:
         self.canvas = FigureCanvasTkAgg(self.fig, master=self.frame)
         self.canvas.show()
         self.canvas.get_tk_widget().grid(row=0)
-        
+        self.canvas.mpl_connect('key_press_event', self.onKey)
         self.strainButton.grid(row=1)
         
         self.mask = np.zeros((512,512))
@@ -938,12 +941,15 @@ class StrainMapping:
         self.pix = np.vstack((self.XX.flatten(), self.YY.flatten())).T
         self.lasso = LassoSelector(self.ax, self.onselect)
         
+        
+        
     def do(self):
+        self.canvas.mpl_connect('key_press_event', self.onKey)
         self.ax.imshow(self.im, cmap = plt.cm.gray)
         
 
     def strainMap(self):
-        print initial_guess
+
         zipped = zip(self.sampleArray, self.openArray)
         transmitted = np.zeros((len(zipped),1,512*512)).astype(np.float32)
         
@@ -965,13 +971,28 @@ class StrainMapping:
                 print 'empty'
 
             else:
-                popt, pcov = curve_fit(self.func, wavelength[posList[0]:posList[-1]+1], np.dstack(np.nan_to_num(transmitted[:,:,c][posList[0]:posList[-1]+1]))[0][0], p0=initial_guess)
-                    
-                initial_guess = [popt[0], popt[1], popt[2], popt[3], popt[4]]
-                lambdas.append(initial_guess[2] - popt[2])
-                "fit Bragg edge, record position"
-                print 'full'                
-        plt.imshow(np.array(lambdas).reshape(512,512))
+                try:
+                    popt, pcov = curve_fit(self.func, wavelength[posList[0]:posList[-1]+1], np.dstack(np.nan_to_num(transmitted[:,:,c][posList[0]:posList[-1]+1]))[0][0], p0=initial_guess)
+                
+                    lambdas.append((initial_guess[2] - popt[2])/initial_guess[2])
+                    print 'full'
+                    "fit Bragg edge, record position"
+                except (OptimizeWarning, RuntimeError):
+                    lambdas.append((initial_guess[2] - popt[2])/initial_guess[2])
+                    print 'Exception'
+                
+                
+        strainMap = np.array(lambdas).reshape(512,512)*self.mask.reshape(512,512) 
+        strainMap = np.ma.masked_where(strainMap == 0, strainMap)
+        minVal = strainMap.min()
+        maxVal = strainMap.max()
+        cmap = plt.cm.coolwarm
+        cmap.set_bad(color='black')
+        fig = plt.figure()
+        ax = fig.add_subplot(111)
+        cax = ax.imshow(strainMap, interpolation='None', cmap=cmap)
+        cbar = fig.colorbar(cax, ticks=[minVal, 0, maxVal])
+        cbar.ax.set_yticklabels(['< '+minVal, '0', '> '+maxVal])
         plt.show()
         plt.close()
                 
@@ -997,6 +1018,62 @@ class StrainMapping:
         ind = p.contains_points(self.pix, radius=1)
         array = self.updateArray(self.im, ind, self.mask)
         self.canvas.draw_idle()
+        
+    def onKey(self, event):
+        print "key pressed"
+        if event.key == 'r':
+            self.ax.imshow(self.im, cmap=plt.cm.gray)
+            self.canvas.draw()
+            
+class PrincipalComponentAnalysis:
+    
+    def __init__(self, directory):
+        
+        self.sampleArrays = directory.sampleFits.arrays
+        
+    def pca(self, X):
+        
+        numDat, dims = X.shape
+        meanX = X.mean(axis = 0)
+        for i in range(numDat):
+            X[i] = X[i] - meanX
+            
+        if dims > 100:
+            print "compacting"
+            M = np.dot(X, X.T)
+            e, EV = np.linalg.eigh(M)
+            tmp = np.dot(X.T, EV).T
+            V = tmp[::-1]
+            S = np.sqrt(e)[::-1]
+            
+        else:
+            print "PCA - SVD"
+            U, S, V = np.linalg.svd(X)
+            V = V [:numDat]
+            
+        return V, S, meanX
+    
+    def controller(self):
+        
+        im = self.sampleArrays[0]
+        m, n = im.shape[0:2]
+        imnbr = len(self.sampleArrays)
+        
+        immatrix = np.array([self.sampleArrays[i].flatten() for i in range(500)])
+        
+        V, S, immean = self.pca(immatrix)
+        immean = immean.reshape(m, n)
+        mode = V[0].reshape(m, n)
+        
+        self.fig1 = plt.figure(1)
+        self.ax1 = self.fig1.add_subplot(111)
+        self.ax1.imshow(immean, cmap=plt.cm.gray)
+        
+        self.fig2 = plt.figure(2)
+        self.ax2 = self.fig2.add_subplot(111)
+        self.ax2.imshow(mode, cmap=plt.cm.gray)
+        plt.show()
+        
 
 
 if __name__ == "__main__":
