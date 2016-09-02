@@ -712,7 +712,7 @@ class ResultsTable:
             xyzstr = "%f \t%f \t%f\n" % (x,y,z)
             self.textwidget.insert(tk.END, xyzstr)
 
-"""
+
 class EdgeFitting:
     def __init__(self):
 
@@ -735,10 +735,6 @@ class EdgeFitting:
 
         self.plotButton = tk.Button(self.frame, text="Fit Curve", command=self.fitCurve)
 
-        self.coeff1 = tk.Entry(self.frame, width=10)
-        self.coeff1label = tk.Label(self.frame, text=u"      Edge Pedestal C \u2081")
-        self.coeff2 = tk.Entry(self.frame, width=10)
-        self.coeff2label = tk.Label(self.frame, text=u"        Edge Height C \u2082")
         self.lambda0var = tk.Entry(self.frame, width=10)
         self.lambda0label = tk.Label(self.frame, text=u"      Lambda Edge \u03BB \u2080")
         self.sigmavar = tk.Entry(self.frame, width=10)
@@ -748,8 +744,6 @@ class EdgeFitting:
 
         self.widgets()
 
-        self.c1 = self.coeff1.get()
-        self.c2 = self.coeff2.get()
         self.lambda0 = self.lambda0var.get()
         self.sigma = self.sigmavar.get()
         self.tau = self.tauvar.get()
@@ -758,26 +752,41 @@ class EdgeFitting:
 
         self.plotButton.grid(row=1)
 
-        self.coeff1label.grid(sticky="W")
-        self.coeff1.grid(row=2)
-        self.coeff1.insert(0, "1")
-        self.coeff2label.grid(sticky="W")
-        self.coeff2.grid(row=3)
-        #self.coeff2.insert(0, "1")
+
         self.lambda0label.grid(sticky="W")
-        self.lambda0var.grid(row=4)
+        self.lambda0var.grid(row=2)
         #self.lambda0var.insert(0, "1")
         self.sigmalabel.grid(sticky="W")
-        self.sigmavar.grid(row=5)
+        self.sigmavar.grid(row=3)
         self.sigmavar.insert(0, "1")
         self.taulabel.grid(sticky="W")
-        self.tauvar.grid(row=6)
+        self.tauvar.grid(row=4)
         self.tauvar.insert(0, "0.01")
 
-    def func(self, x, c_1, c_2, lambda0, sigma, tau):
-        return c_1 * (scipy.special.erfc((lambda0 - x) / (np.sqrt(2) * sigma)) - np.exp(
-            ((lambda0 - x) / tau) + (sigma ** 2 / (2 * tau ** 2))) * scipy.special.erfc(
-            ((lambda0 - x) / (np.sqrt(2) * sigma)) + sigma / (np.sqrt(2) * tau))) + c_2
+    def noiseFiltering(self, y):
+        """
+        low frequency filter to remove noise for parameter estimation
+        """
+        b, a = scipy.signal.butter(3, 0.05)
+        zi = scipy.signal.lfilter_zi(b, a)
+        z, _ = scipy.signal.lfilter(b, a, y, zi = zi*y[0])
+        z2, _ = scipy.signal.lfilter(b, a, y, zi = zi*z[0])
+        ynew = scipy.signal.filtfilt(b,a,y)
+        
+        return ynew
+    
+    def parameterEstimation(self, x, y):
+        
+        self.ynew = self.noiseFiltering(y)
+        """
+        Use first derivative to find edge position (maximal gradient of filtered data indicates position)
+        """
+        dy = np.diff(self.ynew)
+        dx = np.diff(x)
+        dydx = dy/dx
+        edgeIndex = np.argmax(dydx)
+        lambda_0 = x[edgeIndex]
+        return lambda_0, edgeIndex
 
     def subPlot(self, XData, YData):
         
@@ -786,95 +795,53 @@ class EdgeFitting:
         global posList 
         posList = []
         
-        f = open("edgedata.txt", 'wb')
         for xval, yval in zipped:
             if xval >= atp and xval <=btp:
-                line = "%f %f \n" % (xval, yval)
-                f.write(line)
+
                 self.subx.append(xval)
                 self.suby.append(yval)
                 posList.append(zipped.index((xval,yval)))
-                #pos += 1
-            #pos += 1
-        f.close()
-        self.ax.plot(self.subx, self.suby, 'x')
-        arrx = np.array(self.subx)
-        arry = np.array(self.suby)
-        b, a = scipy.signal.butter(3,0.05)
-        zi = scipy.signal.lfilter_zi(b, a)
-        z, _ = scipy.signal.lfilter(b, a, arry, zi=zi*arry[0])
-        z2, _ = scipy.signal.lfilter(b, a, arry, zi=zi*arry[0])
-        filtered = scipy.signal.filtfilt(b, a, arry)
-        #yfilt = scipy.signal.medfilt(arry)
-        dy = np.diff(filtered)
-        dx = np.diff(arrx)
-        dydx = dy/dx
-        edgeIndex = np.argmax(dydx)
-        self.lambda0var.insert(0, self.subx[edgeIndex])
-        edgeheight = np.median(arry[0:edgeIndex])
-        self.coeff2.insert(0, edgeheight)
 
-"""
-        if wavelength == []:
-            print "a"
-
-            zipped = zip(TimeOfFlight, Transmitted)
-            for xval, yval in zipped:
-                if xval >= atp and xval <= btp:
-                    self.subx.append(xval)
-                    self.suby.append(yval)
-            self.ax.plot(self.subx, self.suby, 'x')
-            arrx = np.array(self.subx)
-            arry = np.array(self.suby)
-            yfilt = scipy.signal.medfilt(arry)
-            dy = np.diff(yfilt)
-            dx = np.diff(arrx)
-            dydx = dy/dx
-            edgeIndex = np.argmax(dydx)
-            self.lambda0var.insert(0, self.subx[edgeIndex])
-            edgeheight = np.median(arry[0:edgeIndex])
-            self.coeff2.insert(0, edgeheight)
-            #f = open("datasample.csv", "wb")
-            #zipped = zip(self.subx, self.suby)
-            #for x,y in zipped:
-                #line = "%f,%f\n" % (x,y)
-                #f.writelines(line)
-            #f.close()
-
-        else:
-            print "b"
-
-            zipped = zip(wavelength, Transmitted)
-            for xval, yval in zipped:
-                if xval >= atp and xval <= btp:
-                    self.subx.append(xval)
-                    self.suby.append(yval)
-            self.ax.plot(self.subx, self.suby, 'x')
-            arrx = np.array(self.subx)
-            arry = np.array(self.suby)
-            yfilt = scipy.signal.medfilt(arry)
-            dy = np.diff(yfilt)
-            dx = np.diff(arrx)
-            dydx = dy/dx
-            edgeIndex = np.argmax(dydx)
-            self.lambda0var.insert(0, self.subx[edgeIndex])
-            edgeheight = np.median(arry[0:edgeIndex])
-            self.coeff2.insert(0, edgeheight)
-            #f = open("datasample.csv", "wb")
-            #zipped = zip(self.subx, self.suby)
-            #for x,y in zipped:
-                #line = "%f,%f\n" % (x,y)
-                #f.writelines(line)
-            #f.close()
-"""
+        self.ax.plot(self.subx, self.suby, 'x', ms=3)
+        self.arrx = np.array(self.subx)
+        self.arry = np.array(self.suby)
+        lambda_0, self.edgeIndex = self.parameterEstimation(self.arrx, self.arry)
+        self.lambda0var.insert(0, lambda_0)
         print posList, len(posList)
         return posList
+    
     def subplotCall(self):
         
         if atp < 1:
             self.subPlot(TimeOfFlight, Transmitted)
         else:
             self.subPlot(wavelength, Transmitted)
+            
+    def rightFunc(self, x, m, c):
+        """
+        function describing bragg edge curve for x >> lambda_0
+        """
+        return np.exp(-(m*x + c))
+    
+    def leftFunc(self, x, b, a):
+        """
+        function describing bragg edge curve for x << lambda_0
+        """
+        return np.exp(-(self.m_right*x + self.a_right))*np.exp(-(a + b*x))
+    
+    def centralFunc(self, x, lambda_0, sigma, tau):
+        """
+        function describing bragg edge curve in the vicinity of lambda_0
+        """
+        x_sig = -(x - lambda_0) / (np.sqrt(2)*sigma)
+        x_tau = -(x - lambda_0) / tau
+        sig_tau = sigma / tau
+        b = 0.5*(
+            scipy.special.erfc(x_sig) - np.exp(x_tau + (0.5*sig_tau**2))*scipy.special.erfc(x_sig + sig_tau))
+                  
+        return np.exp(
+            -(self.a_right + self.m_right*x))*(
+            np.exp(-(self.a_left + self.m_left*x)) + (1-np.exp(-(self.a_left + self.m_left*x)))*b)
 
     def fitCurve(self):
 
@@ -885,38 +852,46 @@ class EdgeFitting:
             self.ax.cla()
             self.ax.plot(self.subx, self.suby, 'x')
             global initial_guess
-            initial_guess = [float(
-                self.coeff1.get()), float(
-                self.coeff2.get()), float(self.lambda0var.get()), float(self.sigmavar.get()), float(self.tauvar.get())]
+            initial_guess = [float(self.lambda0var.get()), float(self.sigmavar.get()), float(self.tauvar.get())]
 
-            popt, pcov = curve_fit(self.func, self.subx, self.suby, p0=initial_guess)
-            self.ax.plot(self.subx, self.func(self.subx, popt[0], popt[1], popt[2], popt[3], popt[4]))
+            self.m_right = (self.ynew[self.edgeIndex+20:][-1] - self.ynew[self.edgeIndex+20:][0])/(self.subx[self.edgeIndex+20:][-1] - self.subx[self.edgeIndex+20:][0])
+            self.a_right = np.median(self.suby[self.edgeIndex:])
+            popt_r, pcov = curve_fit(self.rightFunc, self.subx[self.edgeIndex+30:], self.suby[self.edgeIndex+30:], p0=[self.m_right, self.a_right])
+            self.m_right = popt_r[0]
+            self.a_right = popt_r[1]
+            
+            self.m_left = (self.ynew[0:self.edgeIndex-20][-1] - self.ynew[0:self.edgeIndex-20][0])/(self.subx[0:self.edgeIndex-20][-1] - self.subx[0:self.edgeIndex-20][0])
+            self.a_left = np.median(self.suby[0:self.edgeIndex])
+            popt_l, pcov = curve_fit(self.leftFunc, self.subx[:self.edgeIndex-20], self.suby[:self.edgeIndex-20], p0=[self.m_left, self.a_left])
+            self.m_left = popt_l[0]
+            self.a_left = popt_l[1]
+            
+            popt_c, pcov = curve_fit(self.centralFunc, self.arrx, self.arry, p0=initial_guess)
+            
+            self.ax.plot(self.arrx, self.centralFunc(self.arrx, popt_c[0], popt_c[1], popt_c[2]))
             self.canvas.show()
             self.clearText()
-            self.coeff1.insert(0, popt[0])
-            self.coeff2.insert(0, popt[1])
-            self.lambda0var.insert(0, popt[2])
-            self.sigmavar.insert(0, popt[3])
-            self.tauvar.insert(0, popt[4])
-            initial_guess = [float(
-                self.coeff1.get()), float(
-                self.coeff2.get()), float(self.lambda0var.get()), float(self.sigmavar.get()), float(self.tauvar.get())]
+            self.lambda0var.insert(0, popt_c[0])
+            self.sigmavar.insert(0, popt_c[1])
+            self.tauvar.insert(0, popt_c[2])
+            initial_guess = [float(self.lambda0var.get()), float(self.sigmavar.get()), float(self.tauvar.get())]
             return initial_guess
+         
         except (RuntimeError, OptimizeWarning):
             self.ax.cla()
             self.ax.plot(self.subx, self.suby, 'x')
             x = np.linspace(self.subx[0], self.subx[-1], 100)
             self.ax.plot(
-                x, self.func(
-                    x, initial_guess[0], initial_guess[1], initial_guess[2], initial_guess[3], initial_guess[4]))
+                x, self.centralFunc(
+                    x, initial_guess[0], initial_guess[1], initial_guess[2]))
             self.canvas.show()
             return ctypes.windll.user32.MessageBoxA(0, "Please refine your parameters", "Error", 1)
 
     def clearText(self):
-        fields = [self.coeff1, self.coeff2, self.lambda0var, self.sigmavar, self.tauvar]
+        fields = [self.lambda0var, self.sigmavar, self.tauvar]
         for field in fields:
             field.delete(0, "end")
-"""        
+        
         
 class StrainMapping:
         
@@ -968,6 +943,18 @@ class StrainMapping:
             l += 1
             print l
         
+        self.m_right = (self.ynew[self.edgeIndex+20:][-1] - self.ynew[self.edgeIndex+20:][0])/(self.subx[self.edgeIndex+20:][-1] - self.subx[self.edgeIndex+20:][0])
+        self.a_right = np.median(self.suby[self.edgeIndex:])
+        popt_r, pcov = curve_fit(self.rightFunc, self.subx[self.edgeIndex+30:], self.suby[self.edgeIndex+30:], p0=[self.m_right, self.a_right])
+        self.m_right = popt_r[0]
+        self.a_right = popt_r[1]
+            
+        self.m_left = (self.ynew[0:self.edgeIndex-20][-1] - self.ynew[0:self.edgeIndex-20][0])/(self.subx[0:self.edgeIndex-20][-1] - self.subx[0:self.edgeIndex-20][0])
+        self.a_left = np.median(self.suby[0:self.edgeIndex])
+        popt_l, pcov = curve_fit(self.leftFunc, self.subx[:self.edgeIndex-20], self.suby[:self.edgeIndex-20], p0=[self.m_left, self.a_left])
+        self.m_left = popt_l[0]
+        self.a_left = popt_l[1]
+        
         lambdas = []
         for c in range(512*512):
             if transmitted[:,:,c][posList[0]:posList[-1]].all() == False:
@@ -976,13 +963,13 @@ class StrainMapping:
 
             else:
                 try:
-                    popt, pcov = curve_fit(self.func, wavelength[posList[0]:posList[-1]+1], np.dstack(np.nan_to_num(transmitted[:,:,c][posList[0]:posList[-1]+1]))[0][0], p0=initial_guess)
+                    popt_c, pcov = curve_fit(self.centralFunc, wavelength[posList[0]:posList[-1]+1], np.dstack(np.nan_to_num(transmitted[:,:,c][posList[0]:posList[-1]+1]))[0][0], p0=initial_guess)
                 
-                    lambdas.append((initial_guess[2] - popt[2])/initial_guess[2])
+                    lambdas.append((initial_guess[2] - popt_c[2])/initial_guess[2])
                     print 'full'
                     "fit Bragg edge, record position"
                 except (OptimizeWarning, RuntimeError):
-                    lambdas.append((initial_guess[2] - popt[2])/initial_guess[2])
+                    lambdas.append((initial_guess[2] - popt_c[2])/initial_guess[2])
                     print 'Exception'
                 
                 
@@ -999,11 +986,32 @@ class StrainMapping:
         cbar.ax.set_yticklabels(['< '+minVal, '0', '> '+maxVal])
         plt.show()
         plt.close()
-                
-    def func(self, x, c_1, c_2, lambda0, sigma, tau):
-        return c_1 * (scipy.special.erfc((lambda0 - x) / (np.sqrt(2) * sigma)) - np.exp(
-            ((lambda0 - x) / tau) + (sigma ** 2 / (2 * tau ** 2))) * scipy.special.erfc(
-            ((lambda0 - x) / (np.sqrt(2) * sigma)) + sigma / (np.sqrt(2) * tau))) + c_2   
+        
+    def rightFunc(self, x, m, c):
+        """
+        function describing bragg edge curve for x >> lambda_0
+        """
+        return np.exp(-(m*x + c))
+    
+    def leftFunc(self, x, b, a):
+        """
+        function describing bragg edge curve for x << lambda_0
+        """
+        return np.exp(-(self.m_right*x + self.a_right))*np.exp(-(a + b*x))
+    
+    def centralFunc(self, x, lambda_0, sigma, tau):
+        """
+        function describing bragg edge curve in the vicinity of lambda_0
+        """
+        x_sig = -(x - lambda_0) / (np.sqrt(2)*sigma)
+        x_tau = -(x - lambda_0) / tau
+        sig_tau = sigma / tau
+        b = 0.5*(
+            scipy.special.erfc(x_sig) - np.exp(x_tau + (0.5*sig_tau**2))*scipy.special.erfc(x_sig + sig_tau))
+                  
+        return np.exp(
+            -(self.a_right + self.m_right*x))*(
+            np.exp(-(self.a_left + self.m_left*x)) + (1-np.exp(-(self.a_left + self.m_left*x)))*b)   
         
     def updateArray(self, im, indices,mask):
         lin = np.arange(self.im.size)
