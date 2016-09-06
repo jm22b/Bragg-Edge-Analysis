@@ -905,8 +905,8 @@ class StrainMapping:
     def __init__(self, directory):
         
         self.directory = directory
-        self.sampleArray = self.directory.sampleFits.arrays
-        self.openArray = self.directory.openFits.arrays
+        self.sampleArray = self.directory.sampleFits.arrays[posList[0]:posList[-1]]
+        self.openArray = self.directory.openFits.arrays[posList[0]:posList[-1]]
         self.im = self.sampleArray[sliderInd]
         
         self.frame = tk.Toplevel()
@@ -946,20 +946,19 @@ class StrainMapping:
             sample = sample * self.mask.reshape(512,512)
             empty = empty * self.mask.reshape(512,512)
             
-            #transmitted[l] = convolve2d(sample, kernel, mode='same').flatten() / convolve2d(empty, kernel, mode='same').flatten()
-            transmitted[l] = sample.flatten() / empty.flatten()
+            transmitted[l] = convolve2d(sample, kernel, mode='same').flatten() / convolve2d(empty, kernel, mode='same').flatten()
             l += 1
             print l
         
         lambdas = []
         for c in range(512*512):
-            if transmitted[:,:,c][posList[0]:posList[-1]].all() == False:
+            if transmitted[:,:,c].all() == False:
                 lambdas.append(0)
                 print 'empty'
 
             else:
                 try:
-                    popt, pcov = curve_fit(self.centralFunc, wavelength[posList[0]:posList[-1]+1], np.dstack(np.nan_to_num(transmitted[:,:,c][posList[0]:posList[-1]+1]))[0][0], p0=initial_guess)
+                    popt, pcov = curve_fit(self.centralFunc, wavelength[posList[0]:posList[-1]+1], np.dstack(np.nan_to_num(transmitted[:,:,c]))[0][0], p0=initial_guess)
                 
                     lambdas.append((initial_guess[2] - popt[2])/initial_guess[2])
                     print 'full'
