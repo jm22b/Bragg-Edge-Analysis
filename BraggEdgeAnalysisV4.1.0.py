@@ -844,7 +844,8 @@ class EdgeFitting:
             np.exp(-(self.a_left + self.m_left*x)) + (1-np.exp(-(self.a_left + self.m_left*x)))*b)
 
     def fitCurve(self):
-
+        global fit_params #m_r, a_r, m_l, a_l
+        fit_params = []
         warnings.simplefilter("error", OptimizeWarning)
 
         try:
@@ -859,12 +860,16 @@ class EdgeFitting:
             popt_r, pcov = curve_fit(self.rightFunc, self.subx[self.edgeIndex+30:], self.suby[self.edgeIndex+30:], p0=[self.m_right, self.a_right])
             self.m_right = popt_r[0]
             self.a_right = popt_r[1]
+            fit_params.append(self.m_right)
+            fit_params.append(self.a_right)
             
             self.m_left = (self.ynew[0:self.edgeIndex-20][-1] - self.ynew[0:self.edgeIndex-20][0])/(self.subx[0:self.edgeIndex-20][-1] - self.subx[0:self.edgeIndex-20][0])
             self.a_left = np.median(self.suby[0:self.edgeIndex])
             popt_l, pcov = curve_fit(self.leftFunc, self.subx[:self.edgeIndex-20], self.suby[:self.edgeIndex-20], p0=[self.m_left, self.a_left])
             self.m_left = popt_l[0]
             self.a_left = popt_l[1]
+            fit_params.append(self.m_left)
+            fit_params.append(self.a_left)
             
             popt_c, pcov = curve_fit(self.centralFunc, self.arrx, self.arry, p0=initial_guess)
             
@@ -875,7 +880,7 @@ class EdgeFitting:
             self.sigmavar.insert(0, popt_c[1])
             self.tauvar.insert(0, popt_c[2])
             initial_guess = [float(self.lambda0var.get()), float(self.sigmavar.get()), float(self.tauvar.get())]
-            return initial_guess
+            return initial_guess, fit_params
          
         except (RuntimeError, OptimizeWarning):
             self.ax.cla()
@@ -886,6 +891,8 @@ class EdgeFitting:
                     x, initial_guess[0], initial_guess[1], initial_guess[2]))
             self.canvas.show()
             return ctypes.windll.user32.MessageBoxA(0, "Please refine your parameters", "Error", 1)
+        
+    
 
     def clearText(self):
         fields = [self.lambda0var, self.sigmavar, self.tauvar]
@@ -939,21 +946,10 @@ class StrainMapping:
             sample = sample * self.mask.reshape(512,512)
             empty = empty * self.mask.reshape(512,512)
             
-            transmitted[l] = convolve2d(sample, kernel, mode='same').flatten() / convolve2d(empty, kernel, mode='same').flatten()
+            #transmitted[l] = convolve2d(sample, kernel, mode='same').flatten() / convolve2d(empty, kernel, mode='same').flatten()
+            transmitted[l] = sample.flatten() / empty.flatten()
             l += 1
             print l
-        
-        self.m_right = (self.ynew[self.edgeIndex+20:][-1] - self.ynew[self.edgeIndex+20:][0])/(self.subx[self.edgeIndex+20:][-1] - self.subx[self.edgeIndex+20:][0])
-        self.a_right = np.median(self.suby[self.edgeIndex:])
-        popt_r, pcov = curve_fit(self.rightFunc, self.subx[self.edgeIndex+30:], self.suby[self.edgeIndex+30:], p0=[self.m_right, self.a_right])
-        self.m_right = popt_r[0]
-        self.a_right = popt_r[1]
-            
-        self.m_left = (self.ynew[0:self.edgeIndex-20][-1] - self.ynew[0:self.edgeIndex-20][0])/(self.subx[0:self.edgeIndex-20][-1] - self.subx[0:self.edgeIndex-20][0])
-        self.a_left = np.median(self.suby[0:self.edgeIndex])
-        popt_l, pcov = curve_fit(self.leftFunc, self.subx[:self.edgeIndex-20], self.suby[:self.edgeIndex-20], p0=[self.m_left, self.a_left])
-        self.m_left = popt_l[0]
-        self.a_left = popt_l[1]
         
         lambdas = []
         for c in range(512*512):
@@ -963,13 +959,13 @@ class StrainMapping:
 
             else:
                 try:
-                    popt_c, pcov = curve_fit(self.centralFunc, wavelength[posList[0]:posList[-1]+1], np.dstack(np.nan_to_num(transmitted[:,:,c][posList[0]:posList[-1]+1]))[0][0], p0=initial_guess)
+                    popt, pcov = curve_fit(self.centralFunc, wavelength[posList[0]:posList[-1]+1], np.dstack(np.nan_to_num(transmitted[:,:,c][posList[0]:posList[-1]+1]))[0][0], p0=initial_guess)
                 
-                    lambdas.append((initial_guess[2] - popt_c[2])/initial_guess[2])
+                    lambdas.append((initial_guess[2] - popt[2])/initial_guess[2])
                     print 'full'
                     "fit Bragg edge, record position"
                 except (OptimizeWarning, RuntimeError):
-                    lambdas.append((initial_guess[2] - popt_c[2])/initial_guess[2])
+                    lambdas.append((initial_guess[2] - popt[2])/initial_guess[2])
                     print 'Exception'
                 
                 
@@ -987,18 +983,6 @@ class StrainMapping:
         plt.show()
         plt.close()
         
-    def rightFunc(self, x, m, c):
-        """
-        function describing bragg edge curve for x >> lambda_0
-        """
-        return np.exp(-(m*x + c))
-    
-    def leftFunc(self, x, b, a):
-        """
-        function describing bragg edge curve for x << lambda_0
-        """
-        return np.exp(-(self.m_right*x + self.a_right))*np.exp(-(a + b*x))
-    
     def centralFunc(self, x, lambda_0, sigma, tau):
         """
         function describing bragg edge curve in the vicinity of lambda_0
@@ -1010,8 +994,8 @@ class StrainMapping:
             scipy.special.erfc(x_sig) - np.exp(x_tau + (0.5*sig_tau**2))*scipy.special.erfc(x_sig + sig_tau))
                   
         return np.exp(
-            -(self.a_right + self.m_right*x))*(
-            np.exp(-(self.a_left + self.m_left*x)) + (1-np.exp(-(self.a_left + self.m_left*x)))*b)   
+            -(fit_params[1] + fit_params[0]*x))*(
+            np.exp(-(fit_params[3] + fit_params[2]*x)) + (1-np.exp(-(fit_params[3] + fit_params[2]*x)))*b)
         
     def updateArray(self, im, indices,mask):
         lin = np.arange(self.im.size)
