@@ -1017,6 +1017,7 @@ class StrainMapping:
     def onKey(self, event):
         print "key pressed"
         if event.key == 'r':
+            self.mask = np.zeros((512,512))
             self.ax.imshow(self.im, cmap=plt.cm.gray)
             self.canvas.draw()
             
