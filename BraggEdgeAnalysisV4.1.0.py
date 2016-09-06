@@ -958,7 +958,7 @@ class StrainMapping:
 
             else:
                 try:
-                    popt, pcov = curve_fit(self.centralFunc, wavelength[posList[0]:posList[-1]+1], np.dstack(np.nan_to_num(transmitted[:,:,c]))[0][0], p0=initial_guess)
+                    popt, pcov = curve_fit(self.centralFunc, wavelength[posList[0]:posList[-1]], np.dstack(np.nan_to_num(transmitted[:,:,c]))[0][0], p0=initial_guess)
                 
                     lambdas.append((initial_guess[2] - popt[2])/initial_guess[2])
                     print 'full'
@@ -1017,7 +1017,6 @@ class StrainMapping:
     def onKey(self, event):
         print "key pressed"
         if event.key == 'r':
-            self.mask = np.zeros((512,512))
             self.ax.imshow(self.im, cmap=plt.cm.gray)
             self.canvas.draw()
             
