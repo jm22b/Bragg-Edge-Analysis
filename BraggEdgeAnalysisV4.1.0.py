@@ -1076,32 +1076,25 @@ class PrincipalComponentAnalysis:
     def pca(self, X):
         
         numDat, dims = X.shape
-        mean = X.mean(axis = 0)
+        meanX = X.mean(axis = 0)
         for i in range(numDat):
-            X[i] = X[i] - mean
+            X[i] = X[i] - meanX
+        
+
+        print "compacting"
+        M = np.dot(X, X.T)
+        e, EV = np.linalg.eigh(M)
+        tmp = np.dot(X.T, EV).T
+        V = tmp[::-1]
+        S = np.sqrt(e)[::-1]
             
-        if dims > 100:
-            print "compacting"
-            M = np.dot(X, X.T)
-            e, EV = np.linalg.eigh(M)
-            tmp = np.dot(X.T, EV).T
-            V = tmp[::-1]
-            S = np.sqrt(e)[::-1]
-            
-        else:
-            print "PCA - SVD"
-            U, S, V = np.linalg.svd(X)
-            V = V [:numDat]
-            
-        return V, S
+
+       
+        return V, S, meanX
     
     def creator(self, a, b):
         
-        
-        
-        immatrix = np.array([self.sampleArrays[i].flatten() for i in range(a, b)], 'f')
-        
-        V, S = self.pca(immatrix)
+        V, S, immean = self.pca(np.array([self.sampleArrays[i].flatten() for i in range(a, b)], 'f'))
         #immean = immean.reshape(self.m, self.n)
         mode = V[0].reshape(self.m, self.n)
         
@@ -1139,6 +1132,7 @@ class PrincipalComponentAnalysis:
             self.PCAimages.append(self.creator(slices[a], slices[b]))
             a += 1
             b +=1
+        
         self.plot()
             
 
