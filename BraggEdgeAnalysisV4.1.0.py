@@ -1033,23 +1033,52 @@ class StrainMapping:
 class PrincipalComponentAnalysis:
     
     def __init__(self, directory):
+        self.sampleArrays = directory.sampleFits.arrays
         self.frame = tk.Toplevel()
         self.slicesEntry = tk.Entry(self.frame, width = 30)
-        self.PCAbutton = tk.Button(self.frame, text="Perform PCA", width=10, command=self.controller)
-        self.sampleArrays = directory.sampleFits.arrays
+        self.PCAbutton = tk.Button(
+            self.frame, text="Perform PCA", width=10, command=self.controller)
+        self.fig = Figure(figsize=(7,7))
+        self.ax = self.fig.add_subplot(111)
+        self.plotted = False
+        self.l = None
+        self.canvas = None
+        plt.show()
+        
+        
+        
         self.widgets()
         
     def widgets(self):
-        self.slicesEntry.insert(0, "number of slices to combine")
+        self.slicesEntry.insert(0, "number of slices to combine 50")
         self.slicesEntry.pack()
         self.PCAbutton.pack()
+    
+    def plot(self):
         
+        self.plotted = True
+        self.s = 0
+        self.canvas = FigureCanvasTkAgg(self.fig, self.frame)
+        self.canvas.get_tk_widget().pack()
+        self.canvas.draw()
+    
+    def update(self, val):
+        global PCAslider
+        PCAslider = int(self.slider.get())
+        if self.plotted:
+            im = self.PCAimages[PCAslider]
+            self.l = self.ax.imshow(im, cmap=plt.cm.gray, interpolation="nearest")
+            self.l.set_data(im)
+            # print self.directory.sampleFits.arrays[ind]
+            self.canvas.draw()
+        return PCAslider
+    
     def pca(self, X):
         
         numDat, dims = X.shape
-        meanX = X.mean(axis = 0)
+        mean = X.mean(axis = 0)
         for i in range(numDat):
-            X[i] = X[i] - meanX
+            X[i] = X[i] - mean
             
         if dims > 100:
             print "compacting"
@@ -1064,16 +1093,16 @@ class PrincipalComponentAnalysis:
             U, S, V = np.linalg.svd(X)
             V = V [:numDat]
             
-        return V, S, meanX
+        return V, S
     
     def creator(self, a, b):
         
         
         
-        immatrix = np.array([self.sampleArrays[i].flatten() for i in range(a, b)])
+        immatrix = np.array([self.sampleArrays[i].flatten() for i in range(a, b)], 'f')
         
-        V, S, immean = self.pca(immatrix)
-        immean = immean.reshape(self.m, self.n)
+        V, S = self.pca(immatrix)
+        #immean = immean.reshape(self.m, self.n)
         mode = V[0].reshape(self.m, self.n)
         
         return mode
@@ -1087,7 +1116,6 @@ class PrincipalComponentAnalysis:
         #plt.show()
         
     def controller(self):
-        
         self.im = self.sampleArrays[0]
         self.m, self.n = self.im.shape[0:2]
         self.imnbr = len(self.sampleArrays)
@@ -1095,25 +1123,24 @@ class PrincipalComponentAnalysis:
         a, b = 0, 1
         slicesToCombine = int(self.slicesEntry.get())
         newLength = self.imnbr / slicesToCombine
-        PCAimages = []
+        self.PCAimages = []
         slices = []
         
+        self.slider = tk.Scale(
+            self.frame, from_=0, to=newLength-1, resolution=1, orient=tk.HORIZONTAL, command=self.update)
+        self.slider.pack()
+         
         for i in range(newLength):
             slices.append(i*slicesToCombine)
             
         slices.append(self.imnbr)
         
         while b < newLength:
-            PCAimages.append(self.creator(slices[a], slices[b]))
+            self.PCAimages.append(self.creator(slices[a], slices[b]))
             a += 1
             b +=1
+        self.plot()
             
-        print PCAimages
-            
-            
-        
-        
-
 
 if __name__ == "__main__":
     root = tk.Tk()
