@@ -85,7 +85,7 @@ class BraggEdgeAnalysisGUI:
         self.actionmenu.add_command(label="2D Strain Mapping", command=lambda: StrainMapping(self.directory).do())
         
         self.actionmenu.add_separator()
-        self.actionmenu.add_command(label="Principal Component Analysis", command=lambda: PrincipalComponentAnalysis(self.directory).controller())
+        self.actionmenu.add_command(label="Principal Component Analysis", command=lambda: PrincipalComponentAnalysis(self.directory))
 
         self.menubar.add_cascade(label="Actions", menu=self.actionmenu)
 
@@ -905,8 +905,8 @@ class StrainMapping:
     def __init__(self, directory):
         
         self.directory = directory
-        self.sampleArray = self.directory.sampleFits.arrays[posList[0]:posList[-1]]
-        self.openArray = self.directory.openFits.arrays[posList[0]:posList[-1]]
+        self.sampleArray = self.directory.sampleFits.arrays
+        self.openArray = self.directory.openFits.arrays
         self.im = self.sampleArray[sliderInd]
         
         self.frame = tk.Toplevel()
@@ -936,11 +936,13 @@ class StrainMapping:
 
     def strainMap(self):
 
-        zipped = zip(self.sampleArray, self.openArray)
+        beg = posList[0]
+        end = posList[-1]
+        zipped = zip(self.sampleArray[beg:end], self.openArray[beg:end])
         transmitted = np.zeros((len(zipped),1,512*512)).astype(np.float32)
         
         l = 0
-        kernel = np.ones((5,5))
+        kernel = np.ones((15,15))
         kernel = kernel / kernel.sum()
         for sample, empty in zipped:
             sample = sample * self.mask.reshape(512,512)
@@ -949,6 +951,12 @@ class StrainMapping:
             transmitted[l] = convolve2d(sample, kernel, mode='same').flatten() / convolve2d(empty, kernel, mode='same').flatten()
             l += 1
             print l
+        """    
+        plt.figure(5)
+        plt.plot(wavelength[posList[0]:posList[-1]], scipy.signal.medfilt(np.dstack(np.nan_to_num(transmitted[:,:,c]))[0][0]))
+        plt.show()
+        """
+        
         
         lambdas = []
         for c in range(512*512):
@@ -958,13 +966,14 @@ class StrainMapping:
 
             else:
                 try:
-                    popt, pcov = curve_fit(self.centralFunc, wavelength[posList[0]:posList[-1]], np.dstack(np.nan_to_num(transmitted[:,:,c]))[0][0], p0=initial_guess)
+                    popt, pcov = curve_fit(self.centralFunc, wavelength[beg:end], scipy.signal.medfilt(np.dstack(np.nan_to_num(transmitted[:,:,c]))[0][0]), p0=initial_guess)
                 
                     lambdas.append((initial_guess[2] - popt[2])/initial_guess[2])
                     print 'full'
                     "fit Bragg edge, record position"
                 except (OptimizeWarning, RuntimeError):
-                    lambdas.append((initial_guess[2] - popt[2])/initial_guess[2])
+                    #lambdas.append((initial_guess[2] - popt[2])/initial_guess[2])
+                    lambdas.append(initial_guess[2])
                     print 'Exception'
                 
                 
@@ -978,9 +987,10 @@ class StrainMapping:
         ax = fig.add_subplot(111)
         cax = ax.imshow(strainMap, interpolation='None', cmap=cmap)
         cbar = fig.colorbar(cax, ticks=[minVal, 0, maxVal])
-        cbar.ax.set_yticklabels(['< '+minVal, '0', '> '+maxVal])
+        cbar.ax.set_yticklabels([minVal, '0', maxVal])
         plt.show()
         plt.close()
+        
         
     def centralFunc(self, x, lambda_0, sigma, tau):
         """
@@ -1023,8 +1033,16 @@ class StrainMapping:
 class PrincipalComponentAnalysis:
     
     def __init__(self, directory):
-        
+        self.frame = tk.Toplevel()
+        self.slicesEntry = tk.Entry(self.frame, width = 30)
+        self.PCAbutton = tk.Button(self.frame, text="Perform PCA", width=10, command=self.controller)
         self.sampleArrays = directory.sampleFits.arrays
+        self.widgets()
+        
+    def widgets(self):
+        self.slicesEntry.insert(0, "number of slices to combine")
+        self.slicesEntry.pack()
+        self.PCAbutton.pack()
         
     def pca(self, X):
         
@@ -1048,26 +1066,52 @@ class PrincipalComponentAnalysis:
             
         return V, S, meanX
     
-    def controller(self):
+    def creator(self, a, b):
         
-        im = self.sampleArrays[0]
-        m, n = im.shape[0:2]
-        imnbr = len(self.sampleArrays)
         
-        immatrix = np.array([self.sampleArrays[i].flatten() for i in range(500)])
+        
+        immatrix = np.array([self.sampleArrays[i].flatten() for i in range(a, b)])
         
         V, S, immean = self.pca(immatrix)
-        immean = immean.reshape(m, n)
-        mode = V[0].reshape(m, n)
+        immean = immean.reshape(self.m, self.n)
+        mode = V[0].reshape(self.m, self.n)
         
-        self.fig1 = plt.figure(1)
-        self.ax1 = self.fig1.add_subplot(111)
-        self.ax1.imshow(immean, cmap=plt.cm.gray)
+        return mode
+        #self.fig1 = plt.figure(1)
+        #self.ax1 = self.fig1.add_subplot(111)
+        #self.ax1.imshow(immean, cmap=plt.cm.gray)
         
-        self.fig2 = plt.figure(2)
-        self.ax2 = self.fig2.add_subplot(111)
-        self.ax2.imshow(mode, cmap=plt.cm.gray)
-        plt.show()
+        #self.fig2 = plt.figure(2)
+        #self.ax2 = self.fig2.add_subplot(111)
+        #self.ax2.imshow(mode, cmap=plt.cm.gray)
+        #plt.show()
+        
+    def controller(self):
+        
+        self.im = self.sampleArrays[0]
+        self.m, self.n = self.im.shape[0:2]
+        self.imnbr = len(self.sampleArrays)
+        
+        a, b = 0, 1
+        slicesToCombine = int(self.slicesEntry.get())
+        newLength = self.imnbr / slicesToCombine
+        PCAimages = []
+        slices = []
+        
+        for i in range(newLength):
+            slices.append(i*slicesToCombine)
+            
+        slices.append(self.imnbr)
+        
+        while b < newLength:
+            PCAimages.append(self.creator(slices[a], slices[b]))
+            a += 1
+            b +=1
+            
+        print PCAimages
+            
+            
+        
         
 
 
