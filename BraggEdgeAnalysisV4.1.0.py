@@ -990,7 +990,18 @@ class StrainMapping:
         cbar.ax.set_yticklabels([minVal, '0', maxVal])
         plt.show()
         plt.close()
-        
+     
+    def rightFunc(self, x, m, const):
+        """
+        function describing bragg edge curve for x >> lambda_0
+        """
+        return np.exp(-(m*x + const))
+    
+    def leftFunc(self, x, b, a):
+        """
+        function describing bragg edge curve for x << lambda_0
+        """
+        return np.exp(-(self.m_right*x + self.a_right))*np.exp(-(a + b*x))
         
     def centralFunc(self, x, lambda_0, sigma, tau):
         """
@@ -1038,6 +1049,7 @@ class PrincipalComponentAnalysis:
         self.slicesEntry = tk.Entry(self.frame, width = 30)
         self.PCAbutton = tk.Button(
             self.frame, text="Perform PCA", width=10, command=self.controller)
+        
         self.fig = Figure(figsize=(7,7))
         self.ax = self.fig.add_subplot(111)
         self.plotted = False
@@ -1050,7 +1062,7 @@ class PrincipalComponentAnalysis:
         self.widgets()
         
     def widgets(self):
-        self.slicesEntry.insert(0, "number of slices to combine 50")
+        self.slicesEntry.insert(0, "number of slices to combine")
         self.slicesEntry.pack()
         self.PCAbutton.pack()
     
@@ -1067,7 +1079,7 @@ class PrincipalComponentAnalysis:
         PCAslider = int(self.slider.get())
         if self.plotted:
             im = self.PCAimages[PCAslider]
-            self.l = self.ax.imshow(im, cmap=plt.cm.gray, interpolation="nearest")
+            self.l = self.ax.imshow(im, cmap=plt.cm.gray, interpolation=None)
             self.l.set_data(im)
             # print self.directory.sampleFits.arrays[ind]
             self.canvas.draw()
@@ -1093,9 +1105,9 @@ class PrincipalComponentAnalysis:
         return V, S, meanX
     
     def creator(self, a, b):
-        
-        V, S, immean = self.pca(np.array([self.sampleArrays[i].flatten() for i in range(a, b)], 'f'))
-        #immean = immean.reshape(self.m, self.n)
+        immatrix = np.array([self.sampleArrays[i].flatten() for i in range(a, b)], 'f')
+        V, S, immean = self.pca(immatrix)
+        immean = immean.reshape(self.m, self.n)
         mode = V[0].reshape(self.m, self.n)
         
         return mode
@@ -1134,7 +1146,7 @@ class PrincipalComponentAnalysis:
             b +=1
         
         self.plot()
-            
+        
 
 if __name__ == "__main__":
     root = tk.Tk()
