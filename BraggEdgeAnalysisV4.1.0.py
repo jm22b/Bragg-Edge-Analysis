@@ -870,6 +870,9 @@ class EdgeFitting:
             
             popt_c, pcov = curve_fit(self.centralFunc, self.arrx, self.arry, p0=initial_guess)
             
+            print " a_hkl: %f \n b_hkl: %f \n a_0: %f \n b_0: %f \n lambda_0: %f \n sigma: %f \n tau: %f \n" % (
+                self.a_right, self.m_right, self.a_left, self.m_left, popt_c[0], popt_c[1], popt_c[2])
+            
             self.ax.plot(self.arrx, self.centralFunc(self.arrx, popt_c[0], popt_c[1], popt_c[2]))
             self.canvas.show()
             self.clearText()
@@ -942,6 +945,8 @@ class StrainMapping:
         l = 0
         kernel = np.ones((50,50))
         kernel = kernel / kernel.sum()
+        
+        
         for sample, empty in zipped:
             sample = sample * self.mask.reshape(512,512)
             empty = empty * self.mask.reshape(512,512)
@@ -949,11 +954,6 @@ class StrainMapping:
             transmitted[l] = np.nan_to_num(convolve2d(sample / empty, kernel, mode='same')).flatten() #convolve2d(sample, kernel, mode='same').flatten() / convolve2d(empty, kernel, mode='same').flatten()
             l += 1
             print l
-        """    
-        plt.figure(5)
-        plt.plot(wavelength[posList[0]:posList[-1]], scipy.signal.medfilt(np.dstack(np.nan_to_num(transmitted[:,:,c]))[0][0]))
-        plt.show()
-        """
         
         
         lambdas = []
@@ -965,27 +965,26 @@ class StrainMapping:
             else:
                 try:
                     fit_params = []
-                    self.m_right =(np.dstack(transmitted[:,:,c][edgeIndex+20:][-1])[0][0] - np.dstack(transmitted[:,:,c][edgeIndex+20:][0])[0][0]) / (wavelength[beg:end][edgeIndex+20:][-1] - wavelength[beg:end][edgeIndex+20:][0])
+                    self.m_right =(np.dstack(transmitted[:,:,c][edgeIndex+20:][-1])[0][0] - np.dstack(transmitted[:,:,c][edgeIndex+20:][0])[0][0]) / (np.array(wavelength)[beg:end][edgeIndex+20:][-1] - np.array(wavelength)[beg:end][edgeIndex+20:][0])
                     self.a_right = np.median(np.dstack(transmitted[:,:,c][edgeIndex:])[0][0])
                     popt_r, pcov = curve_fit(
-                        self.rightFunc, wavelength[beg:end][edgeIndex+30:], np.dstack(transmitted[:,:,c][edgeIndex+30:])[0][0], p0=[self.m_right, self.a_right])
+                        self.rightFunc, np.array(wavelength)[beg:end][edgeIndex+30:], np.dstack(transmitted[:,:,c][edgeIndex+30:])[0][0], p0=[self.m_right, self.a_right])
                     
                     self.m_right = popt_r[0]
                     self.a_right = popt_r[1]
                     fit_params.append(self.m_right)
                     fit_params.append(self.a_right)
                     
-                    self.m_left = (np.dstack(transmitted[:,:,c][0:edgeIndex-20][-1])[0][0] - np.dstack(transmitted[:,:,c][0:edgeIndex-20][0])[0][0]) / (wavelength[beg:end][0:edgeIndex-20][-1] - wavelength[beg:end][0:edgeIndex-20][0])
+                    self.m_left = (np.dstack(transmitted[:,:,c][0:edgeIndex-20][-1])[0][0] - np.dstack(transmitted[:,:,c][0:edgeIndex-20][0])[0][0]) / (np.array(wavelength)[beg:end][0:edgeIndex-20][-1] - np.array(wavelength)[beg:end][0:edgeIndex-20][0])
                     self.a_left = np.median(transmitted[:,:,c][0:edgeIndex])
-                    popt_l, pcov = curve_fit(self.leftFunc, wavelength[beg:end][:edgeIndex-20], transmitted[:,:,c][:edgeIndex-20], p0=[
-                self.m_left, self.a_left])
+                    popt_l, pcov = curve_fit(self.leftFunc, np.array(wavelength)[beg:end][:edgeIndex-20], transmitted[:,:,c][:edgeIndex-20], p0=[self.m_left, self.a_left])
             
                     self.m_left = popt_l[0]
                     self.a_left = popt_l[1]
                     fit_params.append(self.m_left)
                     fit_params.append(self.a_left)
             
-                    popt, pcov = curve_fit(self.centralFunc, wavelength[beg:end], np.dstack(transmitted[:,:,c])[0][0], p0=initial_guess)
+                    popt, pcov = curve_fit(self.centralFunc, np.array(wavelength)[beg:end], np.dstack(transmitted[:,:,c])[0][0], p0=initial_guess)
                 
                     lambdas.append((popt[2] - initial_guess[2])/initial_guess[2])
                     print 'full'
@@ -1009,6 +1008,7 @@ class StrainMapping:
         cbar.ax.set_yticklabels([minVal, '0', maxVal])
         plt.show()
         plt.close()
+        
      
     def rightFunc(self, x, m, const):
         """
