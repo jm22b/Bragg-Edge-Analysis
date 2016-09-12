@@ -12,30 +12,30 @@ import csv
 matplotlib.use("TkAgg")
 from matplotlib import pyplot as plt
 from matplotlib import path
-from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2TkAgg  # Note: add toolbar
 from matplotlib.figure import Figure
 from matplotlib.widgets import Slider, RectangleSelector, LassoSelector
 from scipy.optimize import curve_fit, OptimizeWarning
 from scipy.signal import convolve2d
 from tkFileDialog import askdirectory, asksaveasfilename
 from astropy.io import fits
-
+#from skimage.filters.rank import mean
 
 # Main page of the GUI
 class BraggEdgeAnalysisGUI:
     def __init__(self, root_):
         self.root = root_
         self.frame = tk.Frame(self.root)
-        self.frame.pack()  # pack is used to manage the position of widgets
+        self.frame.pack() #pack is used to manage the position of widgets
 
         self.directory = GetDirectories()  # instantiate the class here to be passed to other classes, avoids multiples
         self.correction = OverlapCorrectionAndScaling(self.directory) # instance of overlapcorrection takes the aforemention instance of self.directory so that it has access
 
         self.menubar = tk.Menu(self.root)  # creates top level menus to be populated in widgets()
-        self.filemenu = tk.Menu(self.menubar, tearoff=0)  # add a file menu
-        self.actionmenu = tk.Menu(self.menubar, tearoff=0)  # add an action menu
-        self.transplot = tk.Menu(self.menubar, tearoff=0)  # add a sub menu for plotting functions
-        self.bits = tk.Menu(self.menubar, tearoff=0)  # sub menu for choosing 16/32 bit options
+        self.filemenu = tk.Menu(self.menubar, tearoff=0) # add a file menu
+        self.actionmenu = tk.Menu(self.menubar, tearoff=0) # add an action menu
+        self.transplot = tk.Menu(self.menubar, tearoff=0) # add a sub menu for plotting functions
+        self.bits = tk.Menu(self.menubar, tearoff=0) # sub menu for choosing 16/32 bit options
         self.results = tk.Menu(self.menubar, tearoff=0)
         # button for showing the sample images
         self.showDataButton = tk.Button(
@@ -76,8 +76,7 @@ class BraggEdgeAnalysisGUI:
                 self.directory, self.flightpath).combinedTransPlot())
         
         self.transplot.add_separator()
-        self.transplot.add_command(
-            label="Z-Axis Profile", command=lambda: TransPlot(self.directory, self.flightpath).ZAxisProfile())
+        self.transplot.add_command(label="Z-Axis Profile", command=lambda: TransPlot(self.directory, self.flightpath).ZAxisProfile())
 
         self.actionmenu.add_separator()
         self.actionmenu.add_command(label="Fit Bragg Edge", command=lambda: EdgeFitting().subplotCall())
@@ -86,8 +85,7 @@ class BraggEdgeAnalysisGUI:
         self.actionmenu.add_command(label="2D Strain Mapping", command=lambda: StrainMapping(self.directory).do())
         
         self.actionmenu.add_separator()
-        self.actionmenu.add_command(
-            label="Principal Component Analysis", command=lambda: PrincipalComponentAnalysis(self.directory))
+        self.actionmenu.add_command(label="Principal Component Analysis", command=lambda: PrincipalComponentAnalysis(self.directory))
 
         self.menubar.add_cascade(label="Actions", menu=self.actionmenu)
 
@@ -110,11 +108,11 @@ class FitsData:
 
     def __init__(self, names=None, headers=None, arrays=None):
 
-        if names is None:
+        if names == None:
             names = []
-        if headers is None:
+        if headers == None:
             headers = []
-        if arrays is None:
+        if arrays == None:
             arrays = []
 
         self.names = names
@@ -130,7 +128,7 @@ class DirectoryHandler:
         self.samplePath = None
 
     def openOpenDirectory(self):
-        self.openPath = askdirectory()  # tk file dialog
+        self.openPath = askdirectory() # tk file dialog
         return self.openPath
 
     def openSampleDirectory(self):
@@ -141,7 +139,7 @@ class DirectoryHandler:
 class GetDirectories:
     def __init__(self):
         self.directory = DirectoryHandler()
-        self.openFits = FitsData()  # instances of the FitsData() class are blank templates to be filled
+        self.openFits = FitsData() # instances of the FitsData() class are blank templates to be filled
         self.sampleFits = FitsData()
 
         self.openPath = None
@@ -152,14 +150,14 @@ class GetDirectories:
 
         self.directory.openOpenDirectory()
         self.openPath = self.directory.openPath
-        self.loadData(self.directory.openPath, self.openFits)  # load data handles the logic of what to load from where
+        self.loadData(self.directory.openPath, self.openFits) # load data handles the logic of what to load from where
 
     def getSamplePath(self):
         """if overlap corrected data exists, load it. otherwise load the original data"""
 
         self.directory.openSampleDirectory()
         self.samplePath = self.directory.samplePath
-        self.loadData(self.directory.samplePath, self.sampleFits)  # the same load data function is called
+        self.loadData(self.directory.samplePath, self.sampleFits) # the same load data function is called
 
     def loadData(self, path, container):
         """handles the loading of the data, filling up the 'container' (FitsData() instance)
@@ -168,10 +166,10 @@ class GetDirectories:
         f = glob.glob(os.path.join(path, "*[0-9][0-9][0-9][0-9][0-9].fits"))  # relies on 5-digit numbering of files
         for fitsFile in f:
             hdulist = fits.open(fitsFile, memmap=False)  # memmap tries to keep things open after closing them
-            name = hdulist.filename().split("\\")[-1]  # does soom foo to extract filename
-            header = hdulist[0].header  # accesses header object
-            data = hdulist[0].data  # accesses data object
-            hdulist.close()  # close the file
+            name = hdulist.filename().split("\\")[-1] # does soom foo to extract filename
+            header = hdulist[0].header # accesses header object
+            data = hdulist[0].data # accesses data object
+            hdulist.close() # close the file
             container.names.append(name)  # populate container with name, header, data
             container.headers.append(header)
             container.arrays.append(data)
@@ -302,7 +300,6 @@ class OverlapCorrectionAndScaling:
                 s += 1
 
         self.f.close()
-        print self.directory.sampleFits.arrays[100]
 
     def overlapCorrectionScaling(self, path, bits):
 
@@ -363,7 +360,6 @@ class OverlapCorrectionAndScaling:
                 print s
                 s += 1
         self.f.close()
-        print self.directory.openFits.arrays[100]
 
     def writeToFolder(self, array, header, name, path, mod1, mod2):
 
@@ -371,15 +367,15 @@ class OverlapCorrectionAndScaling:
         generic function for saving the data once it has been corrected/scaled
         """
 
-        hdu = fits.PrimaryHDU()  # create fits file
-        hdu.data = array  # populate file with data
-        counts = sum(sum(array))  # get new number of counts
-        hdu.header = header  # copy over old headers
-        hdu.header["N_COUNTS"] = counts  # update with new number of counts
-        TOF = hdu.header["TOF"]  # extract TOF
-        line = "%.16f, %d\n" % (TOF, counts)  # line to be written to .csv file
-        self.f.writelines(line)  # write line to.csv
-        hdu.writeto(os.path.join(path, mod1, mod2 + name))  # saves the file based on the args of the function
+        hdu = fits.PrimaryHDU() # create fits file
+        hdu.data = array # populate file with data
+        counts = sum(sum(array)) # get new number of counts
+        hdu.header = header # copy over old headers
+        hdu.header["N_COUNTS"] = counts # update with new number of counts
+        TOF = hdu.header["TOF"] # extract TOF
+        line = "%.16f, %d\n" % (TOF, counts) # line to be written to .csv file
+        self.f.writelines(line) # write line to.csv
+        hdu.writeto(os.path.join(path, mod1, mod2 + name)) # saves the file based on the args of the function
 
     def doBoth(self, bits):
 
@@ -389,8 +385,7 @@ class OverlapCorrectionAndScaling:
         """
         
         try:
-            # foo to extract a string representing the number of bits being used (used to identify the saved data)
-            fmod = str(bits).split('.')[-1][0:-2][-2:] + "-bit-"
+            fmod = str(bits).split('.')[-1][0:-2][-2:] + "-bit-" # foo to extract a string representing the number of bits being used (used to identify the saved data)
             if not os.path.exists(os.path.join(self.directory.samplePath, fmod + "overlapCorrected")):
                 self.overlapCorrection(self.directory.samplePath, bits)
             else:
@@ -410,7 +405,7 @@ class ShowData:
     """
     
     def __init__(self, root, directory):
-        self.root = root  # want to show in the 'root' page
+        self.root = root # want to show in the 'root' page
         self.directory = directory
 
         self.fig = Figure(figsize=(7, 7)) 
@@ -418,15 +413,15 @@ class ShowData:
         self.plotted = False
         self.l = None
         self.canvas = None
-        plt.show()  # shows the figure upon initialisation
+        plt.show() # shows the figure upon initialisation
 
         self.slider = tk.Scale(
             self.root, from_=0, to=(len(self.directory.sampleFits.arrays) - 1), resolution=1, orient=tk.HORIZONTAL,
-            command=self.update)  # adds a slider to move through the image stack
+            command=self.update) # adds a slider to move through the image stack
         self.slider.pack()
 
-        self.vmax = tk.Entry(self.root, width=10)  # Text entry takes the vmax argument
-        self.vmax.insert(0, "100")  # 100 is a reasonable default value for most imgs
+        self.vmax = tk.Entry(self.root, width=10) # Text entry takes the vmax argument
+        self.vmax.insert(0, "100") # 100 is a reasonable default value for most imgs
         self.vmax.pack()
         # button for accessing the histogram equalisation function
         self.button = tk.Button(text="Histogram Equalisation", command=self.contrast)
@@ -461,7 +456,7 @@ class ShowData:
         self.canvas.get_tk_widget().pack()
         self.canvas.draw()
         self.myrectsel = MyRectangleSelector(self.ax, self.onSelect, drawtype="box", rectprops=dict(
-            facecolor="red", edgecolor="black", alpha=0.2, fill=True))  # sub class to force the rectangle to persist
+            facecolor="red", edgecolor="black", alpha=0.2, fill=True)) #sub class to force the rectangle to persist
 
     def update(self, val):
 
@@ -564,7 +559,7 @@ class TransPlot:
         global wavelength
         wavelength = self.convertToWavelength(TimeOfFlight)
         
-        self.TransPlots = [(TimeOfFlight, Transmitted), (wavelength, Transmitted)]
+        self.TransPlots = [(TimeOfFlight, Transmitted),(wavelength, Transmitted)]
         self.fig2 = plt.figure(2)
         
         self.ax2 = self.fig2.add_subplot(111)
@@ -669,12 +664,16 @@ class ResultsTable:
         self.filemenu = tk.Menu(self.menubar, tearoff=0)
         
         self.TOFlabel = tk.Label(self.frame, text=u"TOF (s)      wavelength (\u00C5) Transmisson")
+        #self.wavelengthlabel = tk.Label(self.frame, text=u"wavelength (\u00C5)")
+        #self.transmissionlabel = tk.Label(self.frame, text="Transmisson")
         
         self.widgets()
 
     def widgets(self):
         
         self.TOFlabel.pack()
+        #self.wavelengthlabel.pack(side="left")
+        #self.transmissionlabel.pack(side="left")
         
         self.textFrame.pack(side='bottom', fill="both", expand=True)
         self.textFrame.grid_propagate(False)
@@ -695,10 +694,9 @@ class ResultsTable:
         
         name = asksaveasfilename()
         print name
-        if name is None:
+        if name == None:
             return
         contents = self.textwidget.get("1.0", "end-1c")
-        print contents
         f = open(name, "wb")
         f.writelines(contents.replace(" ", ","))
         f.close()
@@ -706,9 +704,9 @@ class ResultsTable:
     def populateTable(self):
 
         zipped = zip(TimeOfFlight, wavelength, Transmitted)
-        # results = []
-        for x, y, z in zipped:
-            xyzstr = "%f \t%f \t%f\n" % (x, y, z)
+        #results = []
+        for x,y,z in zipped:
+            xyzstr = "%f \t%f \t%f\n" % (x,y,z)
             self.textwidget.insert(tk.END, xyzstr)
 
 
@@ -751,9 +749,10 @@ class EdgeFitting:
 
         self.plotButton.grid(row=1)
 
+
         self.lambda0label.grid(sticky="W")
         self.lambda0var.grid(row=2)
-        # self.lambda0var.insert(0, "1")
+        #self.lambda0var.insert(0, "1")
         self.sigmalabel.grid(sticky="W")
         self.sigmavar.grid(row=3)
         self.sigmavar.insert(0, "1")
@@ -765,11 +764,11 @@ class EdgeFitting:
         """
         low frequency filter to remove noise for parameter estimation
         """
-        k, l = scipy.signal.butter(3, 0.05)
-        zi = scipy.signal.lfilter_zi(k, l)
-        z, _ = scipy.signal.lfilter(k, l, y, zi=zi*y[0])
-        z2, _ = scipy.signal.lfilter(k, l, y, zi=zi*z[0])
-        ynew = scipy.signal.filtfilt(k, l, y)
+        b, a = scipy.signal.butter(3, 0.05)
+        zi = scipy.signal.lfilter_zi(b, a)
+        z, _ = scipy.signal.lfilter(b, a, y, zi = zi*y[0])
+        z2, _ = scipy.signal.lfilter(b, a, y, zi = zi*z[0])
+        ynew = scipy.signal.filtfilt(b,a,y)
         
         return ynew
     
@@ -790,7 +789,7 @@ class EdgeFitting:
     def subPlot(self, XData, YData):
         
         zipped = zip(XData, YData)
-        # pos = 0
+        #pos = 0
         global posList 
         posList = []
         
@@ -806,7 +805,6 @@ class EdgeFitting:
         self.arry = np.array(self.suby)
         lambda_0, self.edgeIndex = self.parameterEstimation(self.arrx, self.arry)
         self.lambda0var.insert(0, lambda_0)
-        print posList, len(posList)
         return posList
     
     def subplotCall(self):
@@ -816,11 +814,11 @@ class EdgeFitting:
         else:
             self.subPlot(wavelength, Transmitted)
             
-    def rightFunc(self, x, m, const):
+    def rightFunc(self, x, m, c):
         """
         function describing bragg edge curve for x >> lambda_0
         """
-        return np.exp(-(m*x + const))
+        return np.exp(-(m*x + c))
     
     def leftFunc(self, x, b, a):
         """
@@ -854,13 +852,9 @@ class EdgeFitting:
             global initial_guess
             initial_guess = [float(self.lambda0var.get()), float(self.sigmavar.get()), float(self.tauvar.get())]
 
-            self.m_right = (
-                self.ynew[self.edgeIndex+20:][-1] - self.ynew[self.edgeIndex+20:][0])/(
-                self.subx[self.edgeIndex+20:][-1] - self.subx[self.edgeIndex+20:][0])
+            self.m_right = (self.ynew[self.edgeIndex+20:][-1] - self.ynew[self.edgeIndex+20:][0])/(self.subx[self.edgeIndex+20:][-1] - self.subx[self.edgeIndex+20:][0])
             self.a_right = np.median(self.suby[self.edgeIndex:])
-            popt_r, pcov = curve_fit(
-                self.rightFunc, self.subx[self.edgeIndex+30:], self.suby[self.edgeIndex+30:], p0=[
-                    self.m_right, self.a_right])
+            popt_r, pcov = curve_fit(self.rightFunc, self.subx[self.edgeIndex+30:], self.suby[self.edgeIndex+30:], p0=[self.m_right, self.a_right])
             self.m_right = popt_r[0]
             self.a_right = popt_r[1]
             fit_params.append(self.m_right)
@@ -868,18 +862,14 @@ class EdgeFitting:
             
             self.m_left = (self.ynew[0:self.edgeIndex-20][-1] - self.ynew[0:self.edgeIndex-20][0])/(self.subx[0:self.edgeIndex-20][-1] - self.subx[0:self.edgeIndex-20][0])
             self.a_left = np.median(self.suby[0:self.edgeIndex])
-            popt_l, pcov = curve_fit(self.leftFunc, self.subx[:self.edgeIndex-20], self.suby[:self.edgeIndex-20], p0=[
-                self.m_left, self.a_left])
+            popt_l, pcov = curve_fit(self.leftFunc, self.subx[:self.edgeIndex-20], self.suby[:self.edgeIndex-20], p0=[self.m_left, self.a_left])
             self.m_left = popt_l[0]
             self.a_left = popt_l[1]
             fit_params.append(self.m_left)
             fit_params.append(self.a_left)
             
             popt_c, pcov = curve_fit(self.centralFunc, self.arrx, self.arry, p0=initial_guess)
-
-            print " a_hkl: %f \n b_hkl: %f \n a_0: %f \n b_0: %f \n lambda_0: %f \n sigma: %f \n tau: %f \n" % (
-                self.a_right, self.m_right, self.a_left, self.m_left, popt_c[0], popt_c[1], popt_c[2])
-
+            
             self.ax.plot(self.arrx, self.centralFunc(self.arrx, popt_c[0], popt_c[1], popt_c[2]))
             self.canvas.show()
             self.clearText()
@@ -920,7 +910,8 @@ class StrainMapping:
         self.fig = Figure(figsize=(7, 7))
         self.ax = self.fig.add_subplot(111)
         
-        self.strainButton = tk.Button(self.frame, text="do", command=self.strainMap)
+        self.strainButton = tk.Button(
+            self.frame, text="Strain Map", command=self.strainMap)
 
         self.canvas = FigureCanvasTkAgg(self.fig, master=self.frame)
         self.canvas.show()
@@ -928,32 +919,34 @@ class StrainMapping:
         self.canvas.mpl_connect('key_press_event', self.onKey)
         self.strainButton.grid(row=1)
         
-        self.mask = np.zeros((512, 512))
+        self.mask = np.zeros((512,512))
         self.pix = np.arange(512)
         self.XX, self.YY = np.meshgrid(self.pix, self.pix)
         self.pix = np.vstack((self.XX.flatten(), self.YY.flatten())).T
         self.lasso = LassoSelector(self.ax, self.onselect)
-
+        
+        
+        
     def do(self):
         self.canvas.mpl_connect('key_press_event', self.onKey)
-        self.ax.imshow(self.im, cmap=plt.cm.gray)
+        self.ax.imshow(self.im, cmap = plt.cm.gray)
+        
 
     def strainMap(self):
 
         beg = posList[0]
         end = posList[-1]
         zipped = zip(self.sampleArray[beg:end], self.openArray[beg:end])
-        transmitted = np.zeros((len(zipped), 1, 512*512)).astype(np.float32)
+        transmitted = np.zeros((len(zipped),1,512*512)).astype(np.float32)
         
         l = 0
-        kernel = np.ones((15, 15))
+        kernel = np.ones((50,50))
         kernel = kernel / kernel.sum()
         for sample, empty in zipped:
-            sample = sample * self.mask.reshape(512, 512)
-            empty = empty * self.mask.reshape(512, 512)
+            sample = sample * self.mask.reshape(512,512)
+            empty = empty * self.mask.reshape(512,512)
             
-            transmitted[l] = convolve2d(
-                sample, kernel, mode='same').flatten() / convolve2d(empty, kernel, mode='same').flatten()
+            transmitted[l] = np.nan_to_num(convolve2d(sample / empty, kernel, mode='same')).flatten() #convolve2d(sample, kernel, mode='same').flatten() / convolve2d(empty, kernel, mode='same').flatten()
             l += 1
             print l
         """    
@@ -961,28 +954,49 @@ class StrainMapping:
         plt.plot(wavelength[posList[0]:posList[-1]], scipy.signal.medfilt(np.dstack(np.nan_to_num(transmitted[:,:,c]))[0][0]))
         plt.show()
         """
-
+        
+        
         lambdas = []
         for c in range(512*512):
-            if all(transmitted[:, :, c] == 0):
+            if transmitted[:,:,c].all() == False:
                 lambdas.append(0)
                 print 'empty'
 
             else:
                 try:
-                    popt, pcov = curve_fit(
-                        self.centralFunc, wavelength[beg:end], scipy.signal.medfilt(
-                            np.dstack(np.nan_to_num(transmitted[:, :, c]))[0][0]), p0=initial_guess)
+                    fit_params = []
+                    self.m_right =(np.dstack(transmitted[:,:,c][edgeIndex+20:][-1])[0][0] - np.dstack(transmitted[:,:,c][edgeIndex+20:][0])[0][0]) / (wavelength[beg:end][edgeIndex+20:][-1] - wavelength[beg:end][edgeIndex+20:][0])
+                    self.a_right = np.median(np.dstack(transmitted[:,:,c][edgeIndex:])[0][0])
+                    popt_r, pcov = curve_fit(
+                        self.rightFunc, wavelength[beg:end][edgeIndex+30:], np.dstack(transmitted[:,:,c][edgeIndex+30:])[0][0], p0=[self.m_right, self.a_right])
+                    
+                    self.m_right = popt_r[0]
+                    self.a_right = popt_r[1]
+                    fit_params.append(self.m_right)
+                    fit_params.append(self.a_right)
+                    
+                    self.m_left = (np.dstack(transmitted[:,:,c][0:edgeIndex-20][-1])[0][0] - np.dstack(transmitted[:,:,c][0:edgeIndex-20][0])[0][0]) / (wavelength[beg:end][0:edgeIndex-20][-1] - wavelength[beg:end][0:edgeIndex-20][0])
+                    self.a_left = np.median(transmitted[:,:,c][0:edgeIndex])
+                    popt_l, pcov = curve_fit(self.leftFunc, wavelength[beg:end][:edgeIndex-20], transmitted[:,:,c][:edgeIndex-20], p0=[
+                self.m_left, self.a_left])
+            
+                    self.m_left = popt_l[0]
+                    self.a_left = popt_l[1]
+                    fit_params.append(self.m_left)
+                    fit_params.append(self.a_left)
+            
+                    popt, pcov = curve_fit(self.centralFunc, wavelength[beg:end], np.dstack(transmitted[:,:,c])[0][0], p0=initial_guess)
                 
-                    lambdas.append(-(initial_guess[2] - popt[2])/initial_guess[2])
+                    lambdas.append((popt[2] - initial_guess[2])/initial_guess[2])
                     print 'full'
-                    "fit Bragg edge, record position"
                 except (OptimizeWarning, RuntimeError):
-                    # lambdas.append((initial_guess[2] - popt[2])/initial_guess[2])
-                    lambdas.append(initial_guess[2])
+                    #lambdas.append((initial_guess[2] - popt[2])/initial_guess[2])
+                    a = 1
+                    lambdas.append(a)
                     print 'Exception'
                 
-        strainMap = np.array(lambdas).reshape(512, 512)*self.mask.reshape(512, 512)
+                
+        strainMap = np.array(lambdas).reshape(512,512)*self.mask.reshape(512,512) 
         strainMap = np.ma.masked_where(strainMap == 0, strainMap)
         minVal = strainMap.min()
         maxVal = strainMap.max()
@@ -995,6 +1009,18 @@ class StrainMapping:
         cbar.ax.set_yticklabels([minVal, '0', maxVal])
         plt.show()
         plt.close()
+     
+    def rightFunc(self, x, m, const):
+        """
+        function describing bragg edge curve for x >> lambda_0
+        """
+        return np.exp(-(m*x + const))
+    
+    def leftFunc(self, x, b, a):
+        """
+        function describing bragg edge curve for x << lambda_0
+        """
+        return np.exp(-(self.m_right*x + self.a_right))*np.exp(-(a + b*x))
         
     def centralFunc(self, x, lambda_0, sigma, tau):
         """
@@ -1015,23 +1041,22 @@ class StrainMapping:
         self.mask = self.mask.flatten()
         self.mask[lin[indices]] = 1
         newArray = im.flatten()
-        # newArray[lin[indices]] = 1
+        #newArray[lin[indices]] = 1
         newArray = newArray*self.mask
         self.ax.imshow(newArray.reshape(self.im.shape), cmap=plt.cm.gray)
         self.canvas.draw()
-        print self.mask
         return newArray.reshape(self.im.shape)
 
     def onselect(self, verts):
         p = path.Path(verts)
         ind = p.contains_points(self.pix, radius=1)
-        self.updateArray(self.im, ind, self.mask)
+        array = self.updateArray(self.im, ind, self.mask)
         self.canvas.draw_idle()
         
     def onKey(self, event):
         print "key pressed"
         if event.key == 'r':
-            self.mask = np.zeros((512, 512))
+            print "resetting mask"
             self.ax.imshow(self.im, cmap=plt.cm.gray)
             self.canvas.draw()
             
@@ -1040,7 +1065,7 @@ class PrincipalComponentAnalysis:
     def __init__(self, directory):
         self.sampleArrays = directory.sampleFits.arrays
         self.frame = tk.Toplevel()
-        self.slicesEntry = tk.Entry(self.frame, width=30)
+        self.slicesEntry = tk.Entry(self.frame, width = 30)
         self.PCAbutton = tk.Button(
             self.frame, text="Perform PCA", width=10, command=self.controller)
         
@@ -1050,7 +1075,9 @@ class PrincipalComponentAnalysis:
         self.l = None
         self.canvas = None
         plt.show()
-
+        
+        
+        
         self.widgets()
         
     def widgets(self):
@@ -1080,7 +1107,7 @@ class PrincipalComponentAnalysis:
     def pca(self, X):
         
         numDat, dims = X.shape
-        meanX = X.mean(axis=0)
+        meanX = X.mean(axis = 0)
         for i in range(numDat):
             X[i] = X[i] - meanX
         
@@ -1099,10 +1126,18 @@ class PrincipalComponentAnalysis:
     def creator(self, a, b):
         immatrix = np.array([self.sampleArrays[i].flatten() for i in range(a, b)], 'f')
         V, S, immean = self.pca(immatrix)
-        # immean = immean.reshape(self.m, self.n)
+        immean = immean.reshape(self.m, self.n)
         mode = V[0].reshape(self.m, self.n)
         
         return mode
+        #self.fig1 = plt.figure(1)
+        #self.ax1 = self.fig1.add_subplot(111)
+        #self.ax1.imshow(immean, cmap=plt.cm.gray)
+        
+        #self.fig2 = plt.figure(2)
+        #self.ax2 = self.fig2.add_subplot(111)
+        #self.ax2.imshow(mode, cmap=plt.cm.gray)
+        #plt.show()
         
     def controller(self):
         self.im = self.sampleArrays[0]
@@ -1127,7 +1162,7 @@ class PrincipalComponentAnalysis:
         while b < newLength:
             self.PCAimages.append(self.creator(slices[a], slices[b]))
             a += 1
-            b += 1
+            b +=1
         
         self.plot()
         
