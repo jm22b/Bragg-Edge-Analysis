@@ -408,6 +408,7 @@ class ShowData:
         self.root = root # want to show in the 'root' page
         self.directory = directory
 
+        
         self.fig = Figure(figsize=(7, 7)) 
         self.ax = self.fig.add_subplot(111)
         self.plotted = False
@@ -415,17 +416,7 @@ class ShowData:
         self.canvas = None
         plt.show() # shows the figure upon initialisation
 
-        self.slider = tk.Scale(
-            self.root, from_=0, to=(len(self.directory.sampleFits.arrays) - 1), resolution=1, orient=tk.HORIZONTAL,
-            command=self.update) # adds a slider to move through the image stack
-        self.slider.pack()
-
-        self.vmax = tk.Entry(self.root, width=10) # Text entry takes the vmax argument
-        self.vmax.insert(0, "100") # 100 is a reasonable default value for most imgs
-        self.vmax.pack()
-        # button for accessing the histogram equalisation function
-        self.button = tk.Button(text="Histogram Equalisation", command=self.contrast)
-        self.button.pack()
+        
 
     def onSelect(self, eclick, erelease):
 
@@ -450,6 +441,19 @@ class ShowData:
         """
         shows first image of stack
         """
+        if self.directory.sampleFits.arrays == []:
+            return None
+        self.slider = tk.Scale(
+            self.root, from_=0, to=(len(self.directory.sampleFits.arrays) - 1), resolution=1, orient=tk.HORIZONTAL,
+            command=self.update) # adds a slider to move through the image stack
+        self.slider.pack()
+
+        self.vmax = tk.Entry(self.root, width=10) # Text entry takes the vmax argument
+        self.vmax.insert(0, "100") # 100 is a reasonable default value for most imgs
+        self.vmax.pack()
+        # button for accessing the histogram equalisation function
+        self.button = tk.Button(text="Histogram Equalisation", command=self.contrast)
+        self.button.pack()
         self.plotted = True
         self.s = 0
         self.canvas = FigureCanvasTkAgg(self.fig, self.root)
