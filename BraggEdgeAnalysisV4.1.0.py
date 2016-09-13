@@ -411,6 +411,8 @@ class ShowData:
         
         self.fig = Figure(figsize=(7, 7)) 
         self.ax = self.fig.add_subplot(111)
+        self.ax.set_xlabel('Pixels')
+        self.ax.set_ylabel('Pixels')
         self.plotted = False
         self.l = None
         self.canvas = None
@@ -948,7 +950,7 @@ class StrainMapping:
         transmitted = np.zeros((len(zipped),1,512*512)).astype(np.float32)
         
         l = 0
-        kernel = np.ones((25,25))
+        kernel = np.ones((10,10))
         kernel = kernel / kernel.sum()
         
         
@@ -956,7 +958,7 @@ class StrainMapping:
             sample = sample * self.mask.reshape(512,512)
             empty = empty * self.mask.reshape(512,512)
             
-            transmitted[l] = np.nan_to_num(convolve2d(sample / empty, kernel, mode='same')).flatten() #convolve2d(sample, kernel, mode='same').flatten() / convolve2d(empty, kernel, mode='same').flatten()
+            transmitted[l] = np.nan_to_num(convolve2d(sample, kernel, mode='same').flatten() / convolve2d(empty, kernel, mode='same').flatten())
             l += 1
             print l
         
@@ -1086,6 +1088,8 @@ class PrincipalComponentAnalysis:
         
         self.fig = Figure(figsize=(7,7))
         self.ax = self.fig.add_subplot(111)
+        self.ax.set_xlabel('Pixels')
+        self.ax.set_ylabel('Pixels')
         self.plotted = False
         self.l = None
         self.canvas = None
