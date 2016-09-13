@@ -31,6 +31,7 @@ class BraggEdgeAnalysisGUI:
         self.directory = GetDirectories()  # instantiate the class here to be passed to other classes, avoids multiples
         self.correction = OverlapCorrectionAndScaling(self.directory) # instance of overlapcorrection takes the aforemention instance of self.directory so that it has access
 
+        self.showData = ShowData(self.root, self.directory)
         self.menubar = tk.Menu(self.root)  # creates top level menus to be populated in widgets()
         self.filemenu = tk.Menu(self.menubar, tearoff=0) # add a file menu
         self.actionmenu = tk.Menu(self.menubar, tearoff=0) # add an action menu
@@ -39,7 +40,7 @@ class BraggEdgeAnalysisGUI:
         self.results = tk.Menu(self.menubar, tearoff=0)
         # button for showing the sample images
         self.showDataButton = tk.Button(
-            self.frame, text="Show Sample", width=10, command=lambda: ShowData(self.root, self.directory).plot())
+            self.frame, text="Show Sample", width=10, command=lambda: self.showData.plot())
         # text field that is used for specifying the flight path of the instrument
         self.flightpath = tk.Entry(self.frame, width=30)
         # calls the widgets function, populating the GUI with it's objects
@@ -443,6 +444,8 @@ class ShowData:
         """
         shows first image of stack
         """
+        if self.plotted == True:
+            return None
         if self.directory.sampleFits.arrays == []:
             return None
         self.slider = tk.Scale(
@@ -463,6 +466,7 @@ class ShowData:
         self.canvas.draw()
         self.myrectsel = MyRectangleSelector(self.ax, self.onSelect, drawtype="box", rectprops=dict(
             facecolor="red", edgecolor="black", alpha=0.2, fill=True)) #sub class to force the rectangle to persist
+        
 
     def update(self, val):
 
