@@ -755,7 +755,7 @@ class EdgeFitting:
         #self.lambda0var.insert(0, "1")
         self.sigmalabel.grid(sticky="W")
         self.sigmavar.grid(row=3)
-        self.sigmavar.insert(0, "1")
+        self.sigmavar.insert(0, "0.1")
         self.taulabel.grid(sticky="W")
         self.tauvar.grid(row=4)
         self.tauvar.insert(0, "0.01")
@@ -782,7 +782,7 @@ class EdgeFitting:
         dx = np.diff(x)
         dydx = dy/dx
         global edgeIndex
-        edgeIndex = np.argmax(dydx)
+        edgeIndex = int(np.argmax(dydx))
         lambda_0 = x[edgeIndex]
         return lambda_0, edgeIndex
 
@@ -852,17 +852,17 @@ class EdgeFitting:
             global initial_guess
             initial_guess = [float(self.lambda0var.get()), float(self.sigmavar.get()), float(self.tauvar.get())]
 
-            self.m_right = (self.ynew[self.edgeIndex+20:][-1] - self.ynew[self.edgeIndex+20:][0])/(self.subx[self.edgeIndex+20:][-1] - self.subx[self.edgeIndex+20:][0])
-            self.a_right = np.median(self.suby[self.edgeIndex:])
-            popt_r, pcov = curve_fit(self.rightFunc, self.subx[self.edgeIndex+30:], self.suby[self.edgeIndex+30:], p0=[self.m_right, self.a_right])
+            self.m_right = (self.ynew[edgeIndex+20:][-1] - self.ynew[edgeIndex+20:][0])/(self.subx[edgeIndex+20:][-1] - self.subx[edgeIndex+20:][0])
+            self.a_right = np.median(self.suby[edgeIndex:])
+            popt_r, pcov = curve_fit(self.rightFunc, self.subx[edgeIndex+30:], self.suby[edgeIndex+30:], p0=[self.m_right, self.a_right])
             self.m_right = popt_r[0]
             self.a_right = popt_r[1]
             fit_params.append(self.m_right)
             fit_params.append(self.a_right)
             
-            self.m_left = (self.ynew[0:self.edgeIndex-20][-1] - self.ynew[0:self.edgeIndex-20][0])/(self.subx[0:self.edgeIndex-20][-1] - self.subx[0:self.edgeIndex-20][0])
-            self.a_left = np.median(self.suby[0:self.edgeIndex])
-            popt_l, pcov = curve_fit(self.leftFunc, self.subx[:self.edgeIndex-20], self.suby[:self.edgeIndex-20], p0=[self.m_left, self.a_left])
+            self.m_left = (self.ynew[0:edgeIndex-20][-1] - self.ynew[0:edgeIndex-20][0])/(self.subx[0:edgeIndex-20][-1] - self.subx[0:edgeIndex-20][0])
+            self.a_left = np.median(self.suby[0:edgeIndex])
+            popt_l, pcov = curve_fit(self.leftFunc, self.subx[:edgeIndex-20], self.suby[:edgeIndex-20], p0=[self.m_left, self.a_left])
             self.m_left = popt_l[0]
             self.a_left = popt_l[1]
             fit_params.append(self.m_left)
@@ -939,11 +939,12 @@ class StrainMapping:
 
         beg = posList[0]
         end = posList[-1]
+        
         zipped = zip(self.sampleArray[beg:end], self.openArray[beg:end])
         transmitted = np.zeros((len(zipped),1,512*512)).astype(np.float32)
         
         l = 0
-        kernel = np.ones((50,50))
+        kernel = np.ones((25,25))
         kernel = kernel / kernel.sum()
         
         
@@ -967,8 +968,11 @@ class StrainMapping:
                     fit_params = []
                     self.m_right =(np.dstack(transmitted[:,:,c][edgeIndex+20:][-1])[0][0] - np.dstack(transmitted[:,:,c][edgeIndex+20:][0])[0][0]) / (np.array(wavelength)[beg:end][edgeIndex+20:][-1] - np.array(wavelength)[beg:end][edgeIndex+20:][0])
                     self.a_right = np.median(np.dstack(transmitted[:,:,c][edgeIndex:])[0][0])
-                    popt_r, pcov = curve_fit(
-                        self.rightFunc, np.array(wavelength)[beg:end][edgeIndex+30:], np.dstack(transmitted[:,:,c][edgeIndex+30:])[0][0], p0=[self.m_right, self.a_right])
+
+                    xdata_r = np.nan_to_num(np.array(wavelength,dtype=np.float32)[beg:end][edgeIndex+30:])
+                    ydata_r = np.nan_to_num(np.dstack(transmitted[:,:,c][edgeIndex+30:])[0][0])
+
+                    popt_r, pcov = curve_fit(self.rightFunc, xdata_r, ydata_r, p0=[self.m_right[0], self.a_right])
                     
                     self.m_right = popt_r[0]
                     self.a_right = popt_r[1]
@@ -977,14 +981,21 @@ class StrainMapping:
                     
                     self.m_left = (np.dstack(transmitted[:,:,c][0:edgeIndex-20][-1])[0][0] - np.dstack(transmitted[:,:,c][0:edgeIndex-20][0])[0][0]) / (np.array(wavelength)[beg:end][0:edgeIndex-20][-1] - np.array(wavelength)[beg:end][0:edgeIndex-20][0])
                     self.a_left = np.median(transmitted[:,:,c][0:edgeIndex])
-                    popt_l, pcov = curve_fit(self.leftFunc, np.array(wavelength)[beg:end][:edgeIndex-20], transmitted[:,:,c][:edgeIndex-20], p0=[self.m_left, self.a_left])
+                    
+                    xdata_l = np.nan_to_num(np.array(wavelength, dtype=np.float32)[beg:end][:edgeIndex-20])
+                    ydata_l = np.nan_to_num(np.dstack(transmitted[:,:,c][:edgeIndex-20])[0][0])
+                    
+                    popt_l, pcov = curve_fit(self.leftFunc, xdata_l, ydata_l, p0=[self.m_left[0], self.a_left])
             
                     self.m_left = popt_l[0]
                     self.a_left = popt_l[1]
                     fit_params.append(self.m_left)
                     fit_params.append(self.a_left)
+                    
+                    xdata_c = np.nan_to_num(np.array(wavelength, dtype=np.float32)[beg:end])
+                    ydata_c = np.nan_to_num(np.dstack(transmitted[:,:,c])[0][0])
             
-                    popt, pcov = curve_fit(self.centralFunc, np.array(wavelength)[beg:end], np.dstack(transmitted[:,:,c])[0][0], p0=initial_guess)
+                    popt, pcov = curve_fit(self.centralFunc, xdata_c, ydata_c, p0=initial_guess)
                 
                     lambdas.append((popt[2] - initial_guess[2])/initial_guess[2])
                     print 'full'
